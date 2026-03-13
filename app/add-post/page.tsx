@@ -1,7 +1,7 @@
 'use client';
-
+export const dynamic = "force-dynamic";
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '@/src/context/AuthContext';
@@ -14,7 +14,7 @@ type AddPostStep = 1 | 2;
 
 export default function AddPostPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [currentStep, setCurrentStep] = useState<AddPostStep>(1);
