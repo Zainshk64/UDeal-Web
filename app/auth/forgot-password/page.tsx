@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
-import { sendOtp } from '@/api/services/AuthApi';
-import { ROUTES } from '@/utils/constants';
-import { validateEmail } from '@/utils/format';
+import { sendOtp } from '@/src/api/services/AuthApi';
+import { ROUTES } from '@/src/utils/constants';
+import { validateEmail } from '@/src/utils/format';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();

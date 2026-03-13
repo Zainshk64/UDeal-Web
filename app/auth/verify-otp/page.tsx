@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiArrowLeft } from 'react-icons/fi';
-import { verifyOtp, sendOtp, verifyForgotOtp } from '@/api/services/AuthApi';
-import { ROUTES, VALIDATION } from '@/utils/constants';
+import { verifyOtp, sendOtp, verifyForgotOtp } from '@/src/api/services/AuthApi';
+import { ROUTES, VALIDATION } from '@/src/utils/constants';
 
 export default function VerifyOtpPage() {
   const router = useRouter();

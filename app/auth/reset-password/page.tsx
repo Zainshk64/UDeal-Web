@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiLock, FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
-import { resetPassword } from '@/api/services/AuthApi';
-import { ROUTES, VALIDATION } from '@/utils/constants';
-import { validatePasswordStrength } from '@/utils/format';
+import { resetPassword } from '@/src/api/services/AuthApi';
+import { ROUTES, VALIDATION } from '@/src/utils/constants';
+import { validatePasswordStrength } from '@/src/utils/format';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
