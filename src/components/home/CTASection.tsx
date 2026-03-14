@@ -50,7 +50,7 @@ export const CTASection: React.FC = () => {
             className="text-center lg:text-left"
           >
             {/* Badge */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -59,7 +59,7 @@ export const CTASection: React.FC = () => {
             >
               <FiDownload className="w-4 h-4 text-[#F97316]" />
               <span>Available on Mobile</span>
-            </motion.div>
+            </motion.div> */}
 
             {/* Heading */}
             <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight mb-6">
@@ -74,17 +74,12 @@ export const CTASection: React.FC = () => {
             <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-4 max-w-lg mx-auto lg:mx-0">
               Experience the easiest way to buy and sell products in
               Pakistan. From vehicles to electronics, find everything
-              you need — right at your fingertips.
+              you need right at your fingertips.
             </p>
 
-            <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0">
-              Join thousands of happy users who are already trading
-              smarter. Post ads in seconds, connect with buyers
-              instantly, and close deals faster than ever before.
-            </p>
-
+          
             {/* Features List */}
-            <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-10">
+            {/* <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-10">
               {FEATURES.map((feature, index) => (
                 <motion.div
                   key={feature.text}
@@ -102,7 +97,7 @@ export const CTASection: React.FC = () => {
                   </span>
                 </motion.div>
               ))}
-            </div>
+            </div> */}
 
             {/* Store Buttons */}
             <motion.div
@@ -192,7 +187,7 @@ export const CTASection: React.FC = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex justify-center lg:justify-end"
+            className="flex justify-center arotate-4 lg:justify-end"
           >
             <div className="relative">
               {/* Glow Effect Behind Phone */}
@@ -239,7 +234,7 @@ export const CTASection: React.FC = () => {
 
                 {/* Floating Cards Around Phone */}
                 {/* Card 1: Top Left */}
-                <motion.div
+                {/* <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
@@ -280,7 +275,7 @@ export const CTASection: React.FC = () => {
                       </p>
                     </div>
                   </motion.div>
-                </motion.div>
+                </motion.div> */}
 
                 {/* Card 2: Bottom Right */}
                 <motion.div

@@ -119,7 +119,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             'U'}
         </div>
         <div className=" md:block text-left">
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-sm font-semibold text-gray-500">
             {user?.name?.split(' ')[0] || 'User'}
           </p>
           <p className="text-xs text-gray-500">

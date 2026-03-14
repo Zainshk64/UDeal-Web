@@ -296,3 +296,116 @@
     scrollbar-width: none;
   }
 }
+
+/* ============================================
+   SONNER TOAST CUSTOM THEME
+   ============================================ */
+
+/* Base toast styling */
+[data-sonner-toaster] [data-sonner-toast] {
+  --normal-bg: #ffffff;
+  --normal-border: #e5e7eb;
+  --normal-text: #111827;
+  font-family: inherit;
+}
+
+/* Success toast */
+[data-sonner-toast][data-type='success'] {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border-color: #86efac !important;
+  color: #14532d !important;
+}
+
+[data-sonner-toast][data-type='success'] [data-icon] svg {
+  color: #16a34a !important;
+}
+
+/* Error toast */
+[data-sonner-toast][data-type='error'] {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border-color: #fca5a5 !important;
+  color: #7f1d1d !important;
+}
+
+[data-sonner-toast][data-type='error'] [data-icon] svg {
+  color: #dc2626 !important;
+}
+
+/* Info toast */
+[data-sonner-toast][data-type='info'] {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border-color: #93c5fd !important;
+  color: #1e3a5f !important;
+}
+
+[data-sonner-toast][data-type='info'] [data-icon] svg {
+  color: #003049 !important;
+}
+
+/* Warning toast */
+[data-sonner-toast][data-type='warning'] {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border-color: #fcd34d !important;
+  color: #78350f !important;
+}
+
+[data-sonner-toast][data-type='warning'] [data-icon] svg {
+  color: #F97316 !important;
+}
+
+/* Close button */
+[data-sonner-toast] [data-close-button] {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  opacity: 0.5;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Toast enter animation override */
+[data-sonner-toast][data-mounted='true'] {
+  animation: toastSlideIn 0.3s ease-out;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Progress bar for auto-dismiss */
+[data-sonner-toast]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 12px 12px;
+  background: currentColor;
+  opacity: 0.15;
+  animation: toastProgress 4s linear forwards;
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
