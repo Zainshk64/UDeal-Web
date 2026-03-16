@@ -57,11 +57,11 @@ export const PopularCities: React.FC<PopularCitiesProps> = ({
             >
               <Link
                 // href={`${ROUTES.CITY}/${city.CityId}`}
-                href={"#"}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onCityClick?.(city.CityId);
-                }}
+                href={`/city/${city.CityId}`}
+                // onClick={(e) => {
+                //   e.preventDefault();
+                //   onCityClick?.(city.CityId);
+                // }}
                 className="block"
               >
                 <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 group-hover:border-[#F97316]/50 group-hover:scale-105">

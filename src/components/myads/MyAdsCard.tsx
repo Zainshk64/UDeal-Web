@@ -1,205 +1,236 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiEdit2, FiTrash2, FiCheckCircle, FiEye, FiMoreVertical } from 'react-icons/fi';
-import { FaCheck } from 'react-icons/fa';
+import Link from 'next/link';
+import {
+  FiEye,
+  FiEdit2,
+  FiTag,
+  FiStar,
+  FiTrash2,
+  FiMapPin,
+  FiClock,
+} from 'react-icons/fi';
 import { MyAdItem } from '@/src/api/services/MyAdsApi';
 import { getImageUrl } from '@/src/utils/image';
-import { formatCurrency } from '@/src/utils/format';
+import { cn } from '@/src/utils/cn';
 
-interface MyAdsCardProps {
+interface MyAdCardProps {
   ad: MyAdItem;
-  onEdit?: (ad: MyAdItem) => void;
-  onDelete?: (productId: number) => Promise<void>;
-  onMarkAsSold?: (productId: number) => Promise<void>;
-  isLoading?: boolean;
+  onView: (id: number) => void;
+  onEdit: (id: number) => void;
+  onMarkSold: (id: number) => void;
+  onFeature: (id: number, title: string) => void;
+  onDelete: (id: number) => void;
+  actionLoading: { id: number; type: string } | null;
+  featureLoading: number | null;
 }
 
-export const MyAdsCard: React.FC<MyAdsCardProps> = ({
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffDays = Math.ceil(
+    Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays < 1) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+};
+
+export const MyAdCard: React.FC<MyAdCardProps> = ({
   ad,
+  onView,
   onEdit,
+  onMarkSold,
+  onFeature,
   onDelete,
-  onMarkAsSold,
-  isLoading = false,
+  actionLoading,
+  featureLoading,
 }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isMarkingSold, setIsMarkingSold] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const isThisLoading = actionLoading?.id === ad.productId;
+  const loadingType = actionLoading?.type;
+  const isFeatureLoading = featureLoading === ad.productId;
+  const [imgError, setImgError] = React.useState(false);
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      if (onDelete) {
-        await onDelete(ad.productId);
-      }
-    } finally {
-      setIsDeleting(false);
-      setShowMenu(false);
-    }
+  const statusBadge = () => {
+    if (ad.markAsSold) return { label: 'Sold', color: 'bg-gray-500' };
+    if (!ad.enable) return { label: 'Pending', color: 'bg-yellow-500' };
+    return { label: 'Active', color: 'bg-green-500' };
   };
 
-  const handleMarkAsSold = async () => {
-    setIsMarkingSold(true);
-    try {
-      if (onMarkAsSold) {
-        await onMarkAsSold(ad.productId);
-      }
-    } finally {
-      setIsMarkingSold(false);
-      setShowMenu(false);
-    }
-  };
-
-  const imageUrl = getImageUrl(ad.image);
+  const status = statusBadge();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow group"
-    >
-      {/* Image Section */}
-      <div className="relative w-full h-40 bg-gray-200 overflow-hidden">
-        {ad.markAsSold && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-            <div className="bg-red-600 text-white px-4 py-1 rounded font-bold">
-              SOLD
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      {/* Main Content Row */}
+      <div className="flex flex-col sm:flex-row">
+        {/* Image */}
+        <div className="relative w-full sm:w-44 h-44 sm:h-auto bg-gray-200 flex-shrink-0 overflow-hidden">
+          {!imgError && ad.image ? (
+            <Image
+              src={getImageUrl(ad.image)}
+              alt={ad.prodcutTitle}
+              fill
+              className="object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-300">
+              <span className="text-gray-500 text-sm">No Image</span>
+            </div>
+          )}
+
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            <span className={cn('px-2 py-0.5 rounded text-white text-[10px] font-bold', status.color)}>
+              {status.label}
+            </span>
+            {ad.isFeatured && !ad.markAsSold && ad.enable && (
+              <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-bold">
+                Featured
+              </span>
+            )}
+          </div>
+
+          {/* Views */}
+          {ad.viewsCount > 0 && (
+            <div className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded-full flex items-center gap-1">
+              <FiEye className="w-3 h-3 text-white" />
+              <span className="text-white text-[10px]">{ad.viewsCount}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Details */}
+        <Link href={`/product/${ad.productId}`} className="flex-1 p-4 min-w-0 hover:bg-gray-50/50 transition-colors">
+          <h3 className="text-sm font-bold text-[#003049] truncate">
+            {ad.prodcutTitle}
+          </h3>
+          {ad.productDescription && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+              {ad.productDescription}
+            </p>
+          )}
+          <p className="text-base font-bold text-[#F97316] mt-2">
+            Rs {ad.price.toLocaleString()}
+          </p>
+
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-1 text-gray-500">
+              <FiMapPin className="w-3 h-3" />
+              <span className="text-[11px] truncate max-w-[120px]">
+                {ad.address?.split('|')[0]?.trim() || 'No location'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-gray-400">
+              <FiClock className="w-3 h-3" />
+              <span className="text-[11px]">{formatDate(ad.createdDateTime)}</span>
             </div>
           </div>
-        )}
-
-        {!imageError ? (
-          <Image
-            src={imageUrl}
-            alt={ad.prodcutTitle}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-300">
-            <span className="text-gray-500 text-sm">No image</span>
-          </div>
-        )}
-
-        {/* Status Badges */}
-        <div className="absolute top-3 left-3 flex gap-2">
-          {ad.isFeatured && (
-            <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-semibold rounded">
-              Featured
-            </span>
-          )}
-          {ad.enable && (
-            <span className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded flex items-center gap-1">
-              <FaCheck className="w-3 h-3" />
-              Active
-            </span>
-          )}
-        </div>
-
-        {/* More Menu Button */}
-        <div className="absolute top-3 right-3">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 bg-white rounded-full shadow hover:shadow-md transition-shadow"
-          >
-            <FiMoreVertical className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-
-        {/* Menu Dropdown */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-12 right-3 bg-white rounded-lg shadow-lg z-20 min-w-max border border-gray-200"
-            >
-              <button
-                onClick={() => {
-                  onEdit?.(ad);
-                  setShowMenu(false);
-                }}
-                disabled={isLoading}
-                className="w-full px-4 py-2 text-left flex items-center gap-2 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 border-b border-gray-200"
-              >
-                <FiEdit2 className="w-4 h-4" />
-                Edit
-              </button>
-              {!ad.markAsSold && (
-                <button
-                  onClick={handleMarkAsSold}
-                  disabled={isLoading || isMarkingSold}
-                  className="w-full px-4 py-2 text-left flex items-center gap-2 text-green-600 hover:bg-green-50 transition-colors disabled:opacity-50 border-b border-gray-200"
-                >
-                  {isMarkingSold ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                      Marking...
-                    </>
-                  ) : (
-                    <>
-                      <FiCheckCircle className="w-4 h-4" />
-                      Mark as Sold
-                    </>
-                  )}
-                </button>
-              )}
-              <button
-                onClick={handleDelete}
-                disabled={isLoading || isDeleting}
-                className="w-full px-4 py-2 text-left flex items-center gap-2 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <FiTrash2 className="w-4 h-4" />
-                    Delete
-                  </>
-                )}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </Link>
       </div>
 
-      {/* Content Section */}
-      <div className="p-4">
-        {/* Title */}
-        <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2 text-sm">
-          {ad.prodcutTitle}
-        </h3>
+      {/* Action Buttons */}
+      <div className="flex items-center gap-1 px-3 py-2.5 bg-gray-50 border-t border-gray-100 overflow-x-auto scrollbar-hide">
+        {/* View */}
+        <ActionBtn
+          icon={<FiEye />}
+          label="View"
+          color="text-gray-600"
+          bgColor="bg-gray-200"
+          onClick={() => onView(ad.productId)}
+        />
 
-        {/* Price */}
-        <p className="text-[#F97316] font-bold text-lg mb-3">
-          {formatCurrency(ad.price, 'PKR')}
-        </p>
+        {/* Edit */}
+        <ActionBtn
+          icon={<FiEdit2 />}
+          label="Edit"
+          color="text-blue-600"
+          bgColor="bg-blue-100"
+          onClick={() => onEdit(ad.productId)}
+          disabled={isThisLoading || ad.markAsSold}
+        />
 
-        {/* Address */}
-        <p className="text-gray-600 text-xs line-clamp-1 mb-3">{ad.address}</p>
+        {/* Mark Sold */}
+        <ActionBtn
+          icon={
+            isThisLoading && loadingType === 'sold' ? (
+              <div className="w-4 h-4 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin" />
+            ) : (
+              <FiTag />
+            )
+          }
+          label={ad.markAsSold ? 'Sold' : 'Sold?'}
+          color={ad.markAsSold ? 'text-gray-400' : 'text-orange-600'}
+          bgColor={ad.markAsSold ? 'bg-gray-200' : 'bg-orange-100'}
+          onClick={() => onMarkSold(ad.productId)}
+          disabled={isThisLoading || ad.markAsSold || !ad.enable}
+        />
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-200 pt-3">
-          <div className="flex items-center gap-1">
-            <FiEye className="w-4 h-4" />
-            <span>{ad.viewsCount} views</span>
-          </div>
-          <span className="text-gray-400">
-            {new Date(ad.createdDateTime).toLocaleDateString()}
-          </span>
-        </div>
+        {/* Feature */}
+        <ActionBtn
+          icon={
+            isFeatureLoading ? (
+              <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin" />
+            ) : (
+              <FiStar className={ad.isFeatured ? 'fill-current' : ''} />
+            )
+          }
+          label={ad.isFeatured ? 'Featured' : 'Feature'}
+          color={ad.isFeatured ? 'text-purple-400' : 'text-purple-600'}
+          bgColor={ad.isFeatured ? 'bg-purple-200' : 'bg-purple-100'}
+          onClick={() => onFeature(ad.productId, ad.prodcutTitle)}
+          disabled={isThisLoading || ad.markAsSold || !ad.enable || ad.isFeatured || isFeatureLoading}
+        />
+
+        {/* Delete */}
+        <ActionBtn
+          icon={
+            isThisLoading && loadingType === 'delete' ? (
+              <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+            ) : (
+              <FiTrash2 />
+            )
+          }
+          label="Delete"
+          color="text-red-500"
+          bgColor="bg-red-100"
+          onClick={() => onDelete(ad.productId)}
+          disabled={isThisLoading}
+        />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
-export default MyAdsCard;
+// Helper button component
+const ActionBtn: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  color: string;
+  bgColor: string;
+  onClick: () => void;
+  disabled?: boolean;
+}> = ({ icon, label, color, bgColor, onClick, disabled }) => (
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    }}
+    disabled={disabled}
+    className={cn(
+      'flex flex-col items-center justify-center min-w-[60px] flex-1 py-1.5 rounded-lg transition-colors',
+      disabled ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'
+    )}
+  >
+    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center mb-0.5 text-sm', bgColor, color)}>
+      {icon}
+    </div>
+    <span className={cn('text-[10px] font-medium', color)}>{label}</span>
+  </button>
+);

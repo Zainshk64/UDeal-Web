@@ -19,10 +19,10 @@ export interface MyAdItem {
   viewsCount: number;
 }
 
-export interface MyAdsResponse {
-  returnCode: boolean;
-  returnText: string;
-  data?: MyAdItem[];
+export interface AssignAdPayload {
+  planReqId: number;
+  memberId: number;
+  productId: number;
 }
 
 // ============================================
@@ -31,53 +31,14 @@ export interface MyAdsResponse {
 
 export const getMyAds = async (userId: number): Promise<MyAdItem[]> => {
   try {
-    const response = await apiClient.get<MyAdsResponse>('/MyAds/GetMyAds', {
-      params: {
-        UserId: userId,
-      },
-    });
-
-    if (response.data.returnCode && response.data.data) {
-      return response.data.data;
-    }
-
-    return [];
+    const response = await apiClient.get(
+      `/products/GetProductsByUser?userId=${userId}`
+    );
+    return response.data || [];
   } catch (error: any) {
-    console.error('Get my ads error:', error.response?.data || error.message);
-    toast.error('Failed to load your ads', {
-      description: 'Please try again later.',
-    });
+    console.error('My Ads error:', error.response?.data || error.message);
+    toast.error('Error', { description: 'Failed to load your ads' });
     return [];
-  }
-};
-
-// ============================================
-// DELETE AD
-// ============================================
-
-export const deleteAd = async (productId: number, userId: number): Promise<boolean> => {
-  try {
-    const response = await apiClient.post('/MyAds/DeleteProduct', null, {
-      params: {
-        productId,
-        UserId: userId,
-      },
-    });
-
-    if (response.data.returnCode) {
-      toast.success('Ad deleted successfully');
-      return true;
-    } else {
-      toast.error('Failed to delete ad', {
-        description: response.data.returnText || 'Please try again.',
-      });
-      return false;
-    }
-  } catch (error: any) {
-    const msg = error.response?.data?.returnText || 'Failed to delete ad';
-    toast.error('Error', { description: msg });
-    console.error('Delete ad error:', error);
-    return false;
   }
 };
 
@@ -85,97 +46,65 @@ export const deleteAd = async (productId: number, userId: number): Promise<boole
 // MARK AS SOLD
 // ============================================
 
-export const markAsSold = async (productId: number, userId: number): Promise<boolean> => {
+export const markAsSold = async (productId: number): Promise<boolean> => {
   try {
-    const response = await apiClient.post('/MyAds/MarkAsSold', null, {
-      params: {
-        productId,
-        UserId: userId,
-      },
+    const response = await apiClient.post(
+      `/ProductAction/MarkAsSold?productId=${productId}`
+    );
+    toast.success('Marked as Sold!', {
+      description: response.data?.message || 'Ad marked as sold',
     });
-
-    if (response.data.returnCode) {
-      toast.success('Product marked as sold');
-      return true;
-    } else {
-      toast.error('Failed to mark as sold', {
-        description: response.data.returnText || 'Please try again.',
-      });
-      return false;
-    }
+    return true;
   } catch (error: any) {
-    const msg = error.response?.data?.returnText || 'Failed to mark as sold';
-    toast.error('Error', { description: msg });
-    console.error('Mark as sold error:', error);
+    console.error('MarkAsSold error:', error.response?.data);
+    toast.error('Error', { description: 'Failed to mark as sold' });
     return false;
   }
 };
 
 // ============================================
-// TOGGLE FEATURED
+// DELETE PRODUCT
 // ============================================
 
-export const toggleFeatured = async (
-  productId: number,
-  userId: number,
-  isFeatured: boolean
-): Promise<boolean> => {
+export const deleteProduct = async (productId: number): Promise<boolean> => {
   try {
-    const response = await apiClient.post('/MyAds/ToggleFeatured', null, {
-      params: {
-        productId,
-        UserId: userId,
-        isFeatured: !isFeatured,
-      },
+    const response = await apiClient.delete('/products/DeleteProduct', {
+      params: { productId },
     });
-
-    if (response.data.returnCode) {
-      toast.success(isFeatured ? 'Removed from featured' : 'Added to featured');
+    if (response.data?.success || response.data?.returnCode) {
+      toast.success('Deleted!', { description: 'Ad has been removed' });
       return true;
-    } else {
-      toast.error('Failed to update', {
-        description: response.data.returnText || 'Please try again.',
-      });
-      return false;
     }
+    return false;
   } catch (error: any) {
-    const msg = error.response?.data?.returnText || 'Failed to update';
-    toast.error('Error', { description: msg });
-    console.error('Toggle featured error:', error);
+    console.error('Delete error:', error.response?.data || error.message);
+    toast.error('Error', { description: 'Failed to delete ad' });
     return false;
   }
 };
 
 // ============================================
-// EDIT AD
+// ASSIGN AD TO FEATURED PLAN
 // ============================================
 
-export const updateAd = async (
-  productId: number,
-  userId: number,
-  updates: Record<string, any>
-): Promise<boolean> => {
+export const assignAdToFeaturedPlan = async (
+  payload: AssignAdPayload
+): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await apiClient.post('/MyAds/UpdateProduct', updates, {
-      params: {
-        productId,
-        UserId: userId,
-      },
-    });
-
-    if (response.data.returnCode) {
-      toast.success('Ad updated successfully');
-      return true;
-    } else {
-      toast.error('Failed to update ad', {
-        description: response.data.returnText || 'Please try again.',
-      });
-      return false;
-    }
+    const response = await apiClient.post('/Default/AssignAd', payload);
+    const message =
+      typeof response.data === 'string'
+        ? response.data
+        : response.data?.message || 'Ad featured successfully';
+    return { success: true, message };
   } catch (error: any) {
-    const msg = error.response?.data?.returnText || 'Failed to update ad';
-    toast.error('Error', { description: msg });
-    console.error('Update ad error:', error);
-    return false;
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.data ||
+      'Failed to feature ad';
+    return {
+      success: false,
+      message: typeof errorMessage === 'string' ? errorMessage : 'Failed to feature ad',
+    };
   }
 };

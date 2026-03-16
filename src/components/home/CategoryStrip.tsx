@@ -5,8 +5,11 @@ import { motion } from "framer-motion";
 import { CategoryChip } from "./CategoryChip";
 import { CATEGORIES } from "@/src/utils/constants";
 import { Container } from "../ui/Container";
+import { useRouter } from "next/navigation";
 
 export const CategoryStrip: React.FC = () => {
+    const router = useRouter();
+
   return (
     <div className="relative -mt-13 z-20" id="categories">
       <Container>
@@ -30,9 +33,8 @@ export const CategoryStrip: React.FC = () => {
                   icon={category.icon}
                   image={category.image}
                   onClick={() => {
-                    // Handle category click
-                    console.log("Category clicked:", category.name);
-                  }}
+        router.push(`/category/${category.id}`);
+      }}
                 />
               </motion.div>
             ))}
