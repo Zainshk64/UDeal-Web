@@ -52,10 +52,6 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       await logout();
       refreshAuth();
 
-      toast.success('Logged Out', {
-        description: 'You have been successfully logged out.',
-      });
-
       setIsOpen(false);
 
       // Stay on current page - only redirect if on protected route
@@ -87,7 +83,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     {
       icon: FiUser,
       label: 'My Profile',
-      href: ROUTES.MY_ADS,
+      href: ROUTES.PROFILE,
     },
     {
       icon: FiPackage,

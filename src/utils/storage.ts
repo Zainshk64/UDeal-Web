@@ -11,6 +11,12 @@ const STORAGE_KEYS = {
 } as const;
 
 type StorageKey = keyof typeof STORAGE_KEYS;
+const AUTH_STORAGE_EVENT = 'udealzone-auth-storage-changed';
+
+const emitStorageUpdate = (): void => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(AUTH_STORAGE_EVENT));
+};
 
 /**
  * Get value from localStorage
@@ -46,6 +52,7 @@ export const setInStorage = (key: StorageKey, value: string): void => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEYS[key], value);
+    emitStorageUpdate();
   } catch (error) {
     console.error(`Error writing to storage [${key}]:`, error);
   }
@@ -69,6 +76,7 @@ export const removeFromStorage = (key: StorageKey): void => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(STORAGE_KEYS[key]);
+    emitStorageUpdate();
   } catch (error) {
     console.error(`Error removing from storage [${key}]:`, error);
   }
@@ -83,6 +91,7 @@ export const clearAllStorage = (): void => {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
+    emitStorageUpdate();
   } catch (error) {
     console.error('Error clearing storage:', error);
   }
@@ -117,10 +126,15 @@ export interface StoredUserData {
   email?: string;
   fullName?: string;
   name?: string;
+  mobNumber?: string;
+  imageurl?: string;
   cityName?: string;
   cityId?: number;
   userType?: string;
   promocode?: string;
+  totalReferrals?: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
 }
 
 export const setUserData = (userData: StoredUserData): void => {

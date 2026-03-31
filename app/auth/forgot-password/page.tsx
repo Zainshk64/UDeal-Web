@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
@@ -36,7 +37,7 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      const success = await sendOtp(email, 2); // purpose 2 = forgot password
+      const success = await sendOtp(email, 2, 0, 2); // purpose 2 = forgot password; email OTP expires in 2 minutes
       if (success) {
         setIsSubmitted(true);
         // Redirect to verify OTP page after a delay
@@ -87,9 +88,16 @@ export default function ForgotPasswordPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Reset Password
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Image
+                src="/logo/logomain.jpg"
+                alt="UDealZone"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded object-cover"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
+            </div>
             <p className="text-gray-600">Enter your email to receive an OTP</p>
           </div>
 
@@ -124,7 +132,7 @@ export default function ForgotPasswordPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 bg-gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Sending OTP...' : 'Send OTP'}
             </motion.button>

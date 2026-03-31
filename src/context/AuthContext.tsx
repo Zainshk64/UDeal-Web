@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { isAuthenticated, getUserData, clearAuthSession, StoredUserData } from '@/src/utils/storage';
+const AUTH_STORAGE_EVENT = 'udealzone-auth-storage-changed';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -40,9 +41,11 @@ useEffect(() => {
   const handleStorageChange = () => checkAuth();
 
   window.addEventListener("storage", handleStorageChange);
+  window.addEventListener(AUTH_STORAGE_EVENT, handleStorageChange);
 
   return () => {
     window.removeEventListener("storage", handleStorageChange);
+    window.removeEventListener(AUTH_STORAGE_EVENT, handleStorageChange);
   };
 }, []);
 

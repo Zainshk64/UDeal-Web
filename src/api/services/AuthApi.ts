@@ -21,8 +21,14 @@ export interface AuthResponse {
   cityName?: string;
   userType?: string;
   userId?: number | null;
+  imageurl?: string;
+  totalReferrals?: number;
   userPromoCode?: string;
   promocode?: string;
+  email?: string;
+  mobNumber?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   accessToken?: string | null;
   refreshToken?: string | null;
 }
@@ -57,6 +63,55 @@ export interface ChangePasswordResponse {
   accessKey?: string | null;
 }
 
+export interface City {
+  cityId: number;
+  cityName: string;
+}
+
+export interface EditProfileRequest {
+  uid: number;
+  name: string;
+  cityId: number;
+  mobNumber?: string;
+  identifier?: string;
+}
+
+export interface EditProfileResponse {
+  returnCode: boolean;
+  returnText: string;
+  accessKey: string | null;
+}
+
+export type IdentifierType = 'email' | 'phone';
+
+export const isEmailIdentifier = (value: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+export const isPhoneIdentifier = (value: string): boolean => {
+  const normalized = value.replace(/\s+/g, '');
+  const withoutCountry = normalized.replace(/^\+92/, '');
+  const withoutLeadingZero = withoutCountry.replace(/^0/, '');
+  return /^3\d{9}$/.test(withoutLeadingZero);
+};
+
+export const toApiPhone = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.startsWith('92')) return `0${digits.slice(2)}`;
+  if (digits.startsWith('03')) return digits;
+  if (digits.startsWith('3')) return `0${digits}`;
+  return digits;
+};
+
+export const normalizeIdentifier = (
+  input: string
+): { type: IdentifierType; value: string } => {
+  const trimmed = input.trim();
+  if (isEmailIdentifier(trimmed)) {
+    return { type: 'email', value: trimmed.toLowerCase() };
+  }
+  return { type: 'phone', value: toApiPhone(trimmed) };
+};
+
 // ============================================
 // SEND OTP
 // ============================================
@@ -69,7 +124,7 @@ export const sendOtp = async (
 ): Promise<boolean> => {
   try {
     const response = await apiClient.post<OtpResponse>('/otp/send', {
-      email: identifier,
+      identifier,
       purpose,
       userId,
       expireMinutes,
@@ -106,7 +161,7 @@ export const verifyOtp = async (
 ): Promise<boolean> => {
   try {
     const response = await apiClient.post<OtpResponse>('/otp/verifyOTP', {
-      email: identifier,
+      identifier,
       purpose,
       userId,
       otp,
@@ -129,6 +184,92 @@ export const verifyOtp = async (
   }
 };
 
+export const sendMobOtp = async (
+  identifier: string,
+  purpose: number = 1,
+  userId: number = 0,
+  expireMinutes: number = 5
+): Promise<boolean> => {
+  try {
+    const response = await apiClient.post<OtpResponse>('/otp/sendmobotp', {
+      identifier,
+      purpose,
+      userId,
+      expireMinutes,
+    });
+    if (response.data.returnCode) {
+      toast.success('OTP sent successfully!', {
+        description: response.data.returnText || 'Check your phone for the OTP.',
+      });
+      return true;
+    }
+    toast.error('Failed to send OTP', {
+      description: response.data.returnText || 'Please try again.',
+    });
+    return false;
+  } catch (error: any) {
+    const msg = error.response?.data?.returnText || error.message || 'Network error';
+    toast.error('Error sending OTP', { description: msg });
+    return false;
+  }
+};
+
+export const verifyMobOtp = async (
+  identifier: string,
+  otp: string,
+  purpose: number = 1,
+  userId: number = 0
+): Promise<boolean> => {
+  try {
+    const response = await apiClient.post<OtpResponse>('/otp/verifymobOTP', {
+      identifier,
+      purpose,
+      userId,
+      otp,
+    });
+    if (response.data.returnCode) {
+      toast.success('Phone verified successfully!');
+      return true;
+    }
+    toast.error('Invalid OTP', {
+      description: response.data.returnText || 'Please check and try again.',
+    });
+    return false;
+  } catch (error: any) {
+    const msg = error.response?.data?.returnText || error.message || 'Network error';
+    toast.error('Verification failed', { description: msg });
+    return false;
+  }
+};
+
+export const sendIdentifierOtp = async (
+  rawIdentifier: string,
+  purpose: number = 1,
+  userId: number = 0,
+  expireMinutes: number = 5
+): Promise<{ success: boolean; normalizedIdentifier: string; type: IdentifierType }> => {
+  const { type, value } = normalizeIdentifier(rawIdentifier);
+  const success =
+    type === 'phone'
+      ? await sendMobOtp(value, purpose, userId, expireMinutes)
+      : await sendOtp(value, purpose, userId, expireMinutes);
+  return { success, normalizedIdentifier: value, type };
+};
+
+export const verifyIdentifierOtp = async (
+  rawIdentifier: string,
+  otp: string,
+  purpose: number = 1,
+  userId: number = 0
+): Promise<{ success: boolean; normalizedIdentifier: string; type: IdentifierType }> => {
+  const { type, value } = normalizeIdentifier(rawIdentifier);
+  const success =
+    type === 'phone'
+      ? await verifyMobOtp(value, otp, purpose, userId)
+      : await verifyOtp(value, otp, purpose, userId);
+  return { success, normalizedIdentifier: value, type };
+};
+
 // ============================================
 // FORGOT PASSWORD - VERIFY OTP
 // ============================================
@@ -143,7 +284,7 @@ export const verifyForgotOtp = async (
     const response = await apiClient.post<VerifyForgotOtpResponse>(
       '/otp/VerifyForgotPasswordOtp',
       {
-        email: identifier,
+        identifier,
         purpose,
         userId,
         otp,
@@ -179,7 +320,7 @@ export const verifyForgotOtp = async (
 // ============================================
 
 export const resetPassword = async (
-  email: string,
+  identifier: string,
   accessKey: string,
   newPassword: string
 ): Promise<{ success: boolean; message: string }> => {
@@ -187,7 +328,7 @@ export const resetPassword = async (
     const response = await apiClient.post<ResetPasswordResponse>(
       '/auth/ForgotPassword',
       {
-        email,
+        identifier,
         accessKey,
         newPassword,
       }
@@ -220,10 +361,10 @@ export const resetPassword = async (
 // LOGIN
 // ============================================
 
-export const login = async (email: string, password: string): Promise<boolean> => {
+export const login = async (identifier: string, password: string): Promise<boolean> => {
   try {
     const response = await apiClient.post<AuthResponse>('/auth/login', {
-      email,
+      identifier,
       password,
     });
 
@@ -236,14 +377,19 @@ export const login = async (email: string, password: string): Promise<boolean> =
 
       // Save user data
       setUserData({
-        userId: response.data.userId,
-        email,
-        fullName: response.data.fullName,
+        userId: response.data.userId ?? undefined,
+        email: response.data.email || undefined,
+        fullName: response.data.fullName || response.data.name,
         name: response.data.name || response.data.fullName,
+        mobNumber: response.data.mobNumber,
         cityName: response.data.cityName,
-        cityId: response.data.cityId,
+        cityId: response.data.cityId ?? undefined,
         userType: response.data.userType,
         promocode: response.data.promocode,
+        imageurl: response.data.imageurl,
+        totalReferrals: response.data.totalReferrals || 0,
+        emailVerified: response.data.emailVerified ?? !!response.data.email,
+        phoneVerified: response.data.phoneVerified ?? !!response.data.mobNumber,
       });
 
       const firstName = response.data.fullName?.split(' ')[0] || 'User';
@@ -278,6 +424,7 @@ export const login = async (email: string, password: string): Promise<boolean> =
 
 export const signup = async (
   fullName: string,
+  identifier: string,
   email: string,
   password: string,
   cityId: number,
@@ -285,6 +432,7 @@ export const signup = async (
 ): Promise<boolean> => {
   try {
     const response = await apiClient.post<SignupResponse>('/auth/signup', {
+      identifier,
       fullName,
       email,
       password,
@@ -293,24 +441,8 @@ export const signup = async (
     });
 
     if (response.data.returnCode) {
-      // Save tokens if they exist
-      if (response.data.accessToken) {
-        setStoredToken(response.data.accessToken, 'access');
-      }
-      if (response.data.refreshToken) {
-        setStoredToken(response.data.refreshToken, 'refresh');
-      }
-
-      // Save user data
-      setUserData({
-        fullName,
-        email,
-        cityId,
-        userId: response.data.userId,
-      });
-
       toast.success('Account created successfully!', {
-        description: response.data.returnText || 'Welcome to UDealZone!',
+        description: response.data.returnText || 'Please login with your credentials.',
       });
 
       return true;
@@ -351,7 +483,7 @@ export const validatePromoCode = async (promocode: string): Promise<boolean> => 
 // ============================================
 
 export const getCities = async (): Promise<
-  { cityId: number; cityName: string }[]
+  City[]
 > => {
   try {
     const response = await apiClient.get('/Default/cities');
@@ -367,6 +499,62 @@ export const getCities = async (): Promise<
     toast.error('Error', { description: 'Failed to load cities' });
     console.error('Get cities error:', error);
     return [];
+  }
+};
+
+export const editProfile = async (
+  data: EditProfileRequest
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post<EditProfileResponse>('/auth/EditProfile', data);
+    if (response.data.returnCode) {
+      toast.success('Profile updated successfully.');
+      return { success: true, message: response.data.returnText || 'Profile updated successfully.' };
+    }
+    toast.error('Profile update failed', {
+      description: response.data.returnText || 'Please check your details.',
+    });
+    return { success: false, message: response.data.returnText || 'Failed to update profile' };
+  } catch (error: any) {
+    const msg = error.response?.data?.returnText || error.message || 'Network error';
+    toast.error('Profile update failed', { description: msg });
+    return { success: false, message: msg };
+  }
+};
+
+export const uploadProfileImage = async (
+  userId: number,
+  file: File
+): Promise<{ success: boolean; message: string; picPath?: string }> => {
+  try {
+    const formData = new FormData();
+    formData.append('UserId', String(userId));
+    formData.append('File', file);
+    const response = await apiClient.post<{
+      returnCode: boolean;
+      returnText: string;
+      picPath?: string;
+    }>('/auth/upload-profile-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    if (response.data.returnCode) {
+      toast.success('Profile image updated successfully.');
+      return {
+        success: true,
+        message: response.data.returnText || 'Profile image updated successfully.',
+        picPath: response.data.picPath,
+      };
+    }
+    toast.error('Image upload failed', {
+      description: response.data.returnText || 'Please try again.',
+    });
+    return { success: false, message: response.data.returnText || 'Failed to upload image' };
+  } catch (error: any) {
+    const msg = error.response?.data?.returnText || error.message || 'Network error';
+    toast.error('Image upload failed', { description: msg });
+    return { success: false, message: msg };
   }
 };
 
@@ -441,9 +629,9 @@ export const signInWithGoogleBackend = async (
     name: string;
     id: string;
   },
-  phone: string,
-  cityId: number,
-  gender: string
+  phone: string = '',
+  cityId: number = 0,
+  gender: string = ''
 ): Promise<any> => {
   try {
     const response = await apiClient.post('/auth/SignInWithGoogle', {
@@ -463,7 +651,11 @@ export const signInWithGoogleBackend = async (
       setUserData({
         email: googleUser.email,
         fullName: googleUser.name,
+        name: googleUser.name,
         cityId,
+        mobNumber: phone,
+        emailVerified: true,
+        phoneVerified: !!phone,
       });
 
       toast.success('Google login successful!');

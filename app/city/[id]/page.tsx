@@ -144,7 +144,7 @@ export default function CityPage() {
 
   return (
     <>
-      <Navbar variant="solid" showSearch={false} />
+      {/* <Navbar variant="solid" showSearch={false} /> */}
 
       <main className="pt-24 pb-8 min-h-screen bg-gray-50">
         {/* Header */}

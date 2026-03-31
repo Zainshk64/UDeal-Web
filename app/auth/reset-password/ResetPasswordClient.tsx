@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiLock, FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
@@ -12,7 +13,7 @@ import { validatePasswordStrength } from '@/src/utils/format';
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email') || '';
+  const identifier = searchParams.get('identifier') || searchParams.get('email') || '';
   const accessKey = searchParams.get('accessKey') || '';
 
   const [newPassword, setNewPassword] = useState('');
@@ -57,14 +58,14 @@ export default function ResetPasswordPage() {
 
     if (!validateForm()) return;
 
-    if (!email || !accessKey) {
+    if (!identifier || !accessKey) {
       setErrors({ form: 'Missing required parameters. Please try again.' });
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await resetPassword(email, accessKey, newPassword);
+      const result = await resetPassword(identifier, accessKey, newPassword);
 
       if (result.success) {
         // Redirect to login after success
@@ -104,9 +105,16 @@ export default function ResetPasswordPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Create New Password
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Image
+                src="/logo/logomain.jpg"
+                alt="UDealZone"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded object-cover"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Create New Password</h1>
+            </div>
             <p className="text-gray-600 text-sm">
               Enter a strong password to secure your account
             </p>
@@ -217,7 +225,7 @@ export default function ResetPasswordPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 bg-gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Resetting...' : 'Reset Password'}
             </motion.button>

@@ -1,13 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin } from 'react-icons/fi';
-import { signup, getCities, validatePromoCode } from '@/src/api/services/AuthApi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiMapPin, FiSmartphone } from 'react-icons/fi';
+import {
+  signup,
+  getCities,
+  validatePromoCode,
+  isEmailIdentifier,
+  isPhoneIdentifier,
+  sendIdentifierOtp,
+  verifyIdentifierOtp,
+  signInWithGoogleBackend,
+} from '@/src/api/services/AuthApi';
 import { ROUTES, VALIDATION } from '@/src/utils/constants';
 import { validateEmail, validatePasswordStrength } from '@/src/utils/format';
+import { useAuth } from '@/src/context/AuthContext';
+import OtpCodeInput from '@/src/components/auth/OtpCodeInput';
+import PakistanPhoneInput from '@/src/components/auth/PakistanPhoneInput';
+import { promptGoogleCredential } from '@/src/utils/googleAuth';
+import { toast } from 'sonner';
 
 interface City {
   cityId: number;
@@ -16,6 +31,25 @@ interface City {
 
 export default function SignupPage() {
   const router = useRouter();
+  const { refreshAuth } = useAuth();
+  const [step, setStep] = useState<'identifier' | 'otp' | 'details'>('identifier');
+  const [identifierMode, setIdentifierMode] = useState<'email' | 'phone'>('email');
+  const [identifierInput, setIdentifierInput] = useState('');
+  const [normalizedIdentifier, setNormalizedIdentifier] = useState('');
+  const [otpIdentifierType, setOtpIdentifierType] = useState<'email' | 'phone'>('email');
+  const [otpValue, setOtpValue] = useState('');
+  const [otpResetKey, setOtpResetKey] = useState('init');
+  const [otpError, setOtpError] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const getOtpCountdownSeconds = (type: 'email' | 'phone') => (type === 'phone' ? 300 : 120);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,9 +60,16 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isCitiesLoading, setIsCitiesLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'fair' | 'good' | 'strong'>('weak');
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => setResendCountdown((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
   // Load cities on mount
   useEffect(() => {
@@ -47,7 +88,25 @@ export default function SignupPage() {
     loadCities();
   }, []);
 
-  const validateForm = (): boolean => {
+  const identifierLabel = useMemo(
+    () => (identifierMode === 'email' ? 'Email Address' : 'Mobile Number'),
+    [identifierMode]
+  );
+
+  const validateIdentifier = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!identifierInput.trim()) {
+      newErrors.identifier = `${identifierLabel} is required`;
+    } else if (identifierMode === 'email' && !isEmailIdentifier(identifierInput)) {
+      newErrors.identifier = 'Please enter a valid email';
+    } else if (identifierMode === 'phone' && !isPhoneIdentifier(identifierInput)) {
+      newErrors.identifier = 'Use Pakistani mobile format 3XXXXXXXXX';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateDetailsForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     // Full Name
@@ -57,9 +116,8 @@ export default function SignupPage() {
       newErrors.fullName = `Name must be at least ${VALIDATION.NAME_MIN_LENGTH} characters`;
     }
 
-    // Email
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email is required for your account';
     } else if (!validateEmail(email)) {
       newErrors.email = 'Please enter a valid email';
     }
@@ -97,10 +155,68 @@ export default function SignupPage() {
     if (errors.password) setErrors({ ...errors, password: '' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async () => {
+    if (!validateIdentifier()) return;
+    setIsLoading(true);
+    try {
+      const expireMinutes = identifierMode === 'phone' ? 5 : 2;
+      const result = await sendIdentifierOtp(identifierInput, 1, 0, expireMinutes);
+      if (!result.success) return;
+      setNormalizedIdentifier(result.normalizedIdentifier);
+      setOtpIdentifierType(result.type);
+      setOtpValue('');
+      setOtpError('');
+      setOtpResetKey(`${Date.now()}`);
+      if (result.type === 'email') {
+        setEmail(result.normalizedIdentifier);
+      }
+      setResendCountdown(getOtpCountdownSeconds(result.type));
+      setStep('otp');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyAndContinue = useCallback(
+    async (otp: string) => {
+      if (otp.length !== VALIDATION.OTP_LENGTH || isVerifyingOtp) return;
+      setOtpValue(otp);
+      setOtpError('');
+      setIsVerifyingOtp(true);
+      try {
+        const result = await verifyIdentifierOtp(normalizedIdentifier || identifierInput, otp, 1);
+        if (!result.success) {
+          setOtpError('Invalid OTP. Please check and try again.');
+          return;
+        }
+        if (result.type === 'email') {
+          setEmail(result.normalizedIdentifier);
+        }
+        setStep('details');
+      } finally {
+        setIsVerifyingOtp(false);
+      }
+    },
+    [identifierInput, isVerifyingOtp, normalizedIdentifier]
+  );
+
+  const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
+    const expireMinutes = otpIdentifierType === 'phone' ? 5 : 2;
+    const result = await sendIdentifierOtp(normalizedIdentifier || identifierInput, 1, 0, expireMinutes);
+    if (result.success) {
+      setOtpIdentifierType(result.type);
+      setResendCountdown(getOtpCountdownSeconds(result.type));
+      setOtpResetKey(`${Date.now()}`);
+      setOtpValue('');
+      setOtpError('');
+    }
+  };
+
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateDetailsForm()) return;
 
     setIsLoading(true);
     try {
@@ -116,6 +232,7 @@ export default function SignupPage() {
 
       const success = await signup(
         fullName,
+        normalizedIdentifier || identifierInput,
         email,
         password,
         cityId,
@@ -123,10 +240,32 @@ export default function SignupPage() {
       );
 
       if (success) {
-        router.push(ROUTES.HOME);
+        router.push(`${ROUTES.LOGIN}?identifier=${encodeURIComponent(normalizedIdentifier || email)}`);
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const googleUser = await promptGoogleCredential();
+      if (!googleUser.email) {
+        toast.error('Google account email is required.');
+        return;
+      }
+      const data = await signInWithGoogleBackend(googleUser);
+      if (data) {
+        refreshAuth();
+        router.push(ROUTES.HOME);
+      }
+    } catch (error: any) {
+      toast.error('Google signup failed', {
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -155,67 +294,148 @@ export default function SignupPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">
-              <span className="text-[#003049]">UDeal</span>
-              <span className="text-[#F97316]">Zone</span>
-            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <Image
+                src="/logo/logomain.jpg"
+                alt="UDealZone"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-lg object-cover"
+              />
+              <h1 className="text-3xl font-bold mb-2">
+                <span className="text-[#003049]">UDeal</span>
+                <span className="text-[#F97316]">Zone</span>
+              </h1>
+            </div>
             <p className="text-gray-600">Create your account and start selling</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <FiUser className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => {
-                    setFullName(e.target.value);
-                    if (errors.fullName) setErrors({ ...errors, fullName: '' });
-                  }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
-                    errors.fullName ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="John Doe"
-                />
-              </div>
-              {errors.fullName && (
-                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-              )}
+          {step === 'identifier' && (
+            <div className="mb-6 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifierMode('email');
+                  setIdentifierInput('');
+                  setErrors({});
+                }}
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  identifierMode === 'email' ? 'bg-white text-[#003049] shadow' : 'text-gray-600'
+                }`}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifierMode('phone');
+                  setIdentifierInput('');
+                  setErrors({});
+                }}
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  identifierMode === 'phone' ? 'bg-white text-[#003049] shadow' : 'text-gray-600'
+                }`}
+              >
+                Mobile
+              </button>
             </div>
+          )}
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <FiMail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors({ ...errors, email: '' });
-                  }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="your@email.com"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          {(step === 'identifier' || step === 'details') && (
+            <form onSubmit={step === 'identifier' ? (e) => { e.preventDefault(); handleSendOtp(); } : handleSignupSubmit} className="space-y-4">
+              {step === 'identifier' && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">{identifierLabel}</label>
+                  {identifierMode === 'email' ? (
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={identifierInput}
+                        onChange={(e) => {
+                          setIdentifierInput(e.target.value);
+                          if (errors.identifier) setErrors({ ...errors, identifier: '' });
+                        }}
+                        className={`w-full rounded-lg border py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#F97316] ${
+                          errors.identifier ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                  ) : (
+                    <PakistanPhoneInput
+                      value={identifierInput}
+                      onChange={(next) => {
+                        setIdentifierInput(next);
+                        if (errors.identifier) setErrors({ ...errors, identifier: '' });
+                      }}
+                      error={errors.identifier}
+                    />
+                  )}
+                  {identifierMode === 'email' && errors.identifier ? (
+                    <p className="mt-1 text-sm text-red-500">{errors.identifier}</p>
+                  ) : null}
+                </div>
               )}
-            </div>
 
-            {/* City Selection */}
-            <div>
+              {step === 'details' && (
+                <>
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <FiUser className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          if (errors.fullName) setErrors({ ...errors, fullName: '' });
+                        }}
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
+                          errors.fullName ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    {errors.fullName && (
+                      <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        readOnly={identifierMode === 'email'}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (errors.email) setErrors({ ...errors, email: '' });
+                        }}
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
+                          errors.email ? 'border-red-500' : 'border-gray-300'
+                        } ${identifierMode === 'email' ? 'bg-gray-100' : ''}`}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
+                  </div>
+                </>
+              )}
+              {step === 'details' && (
+                <>
+                  {/* City Selection */}
+                  <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 City
               </label>
@@ -248,10 +468,10 @@ export default function SignupPage() {
               {errors.cityId && (
                 <p className="text-red-500 text-sm mt-1">{errors.cityId}</p>
               )}
-            </div>
+                  </div>
 
-            {/* Password */}
-            <div>
+                  {/* Password */}
+                  <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
@@ -298,10 +518,10 @@ export default function SignupPage() {
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
-            </div>
+                  </div>
 
-            {/* Confirm Password */}
-            <div>
+                  {/* Confirm Password */}
+                  <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Confirm Password
               </label>
@@ -334,10 +554,10 @@ export default function SignupPage() {
               {errors.confirmPassword && (
                 <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
               )}
-            </div>
+                  </div>
 
-            {/* Promo Code */}
-            <div>
+                  {/* Promo Code */}
+                  <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Promo Code <span className="text-gray-500 text-xs">(Optional)</span>
               </label>
@@ -356,19 +576,84 @@ export default function SignupPage() {
               {errors.promoCode && (
                 <p className="text-red-500 text-sm mt-1">{errors.promoCode}</p>
               )}
-            </div>
+                  </div>
+                </>
+              )}
 
-            {/* Submit Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 gradient-accent text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-            >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
-            </motion.button>
-          </form>
+              {/* Submit Button */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={isLoading}
+                className="mt-6 w-full rounded-lg py-2.5 font-semibold text-white gradient-accent transition-shadow hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLoading
+                  ? step === 'identifier'
+                    ? 'Sending OTP...'
+                    : 'Creating Account...'
+                  : step === 'identifier'
+                  ? 'Send OTP'
+                  : 'Create Account'}
+              </motion.button>
+            </form>
+          )}
+
+          {step === 'otp' && (
+            <div className="space-y-4">
+              <p className="text-center text-sm text-gray-600">
+                Enter the 6-digit OTP sent to <strong>{normalizedIdentifier || identifierInput}</strong>
+              </p>
+              <OtpCodeInput
+                resetKey={otpResetKey}
+                error={otpError}
+                disabled={isVerifyingOtp}
+                onChange={setOtpValue}
+                onComplete={verifyAndContinue}
+              />
+              <button
+                type="button"
+                disabled={isVerifyingOtp || otpValue.length !== VALIDATION.OTP_LENGTH}
+                onClick={() => verifyAndContinue(otpValue)}
+                className="w-full rounded-lg bg-[#003049] py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+              </button>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendCountdown > 0}
+                className="w-full text-sm font-medium text-[#F97316] disabled:text-gray-400"
+              >
+                {resendCountdown > 0
+                  ? `Resend ${otpIdentifierType === 'phone' ? 'mobile' : 'email'} OTP in ${formatCountdown(resendCountdown)}`
+                  : 'Resend OTP'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep('identifier')}
+                className="w-full text-sm text-gray-600"
+              >
+                Edit identifier
+              </button>
+            </div>
+          )}
+
+          <div className="my-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-gray-300" />
+            <span className="text-sm text-gray-500">or</span>
+            <div className="h-px flex-1 bg-gray-300" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={isGoogleLoading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FiSmartphone className="h-4 w-4" />
+            {isGoogleLoading ? 'Connecting Google...' : 'Continue with Google'}
+          </button>
 
           {/* Login Link */}
           <p className="text-center text-gray-600 mt-6">

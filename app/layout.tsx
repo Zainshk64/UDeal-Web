@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/src/context/AuthContext';
 import './globals.css';
 import Footer from '@/src/components/layout/Footer';
+import { Navbar } from '@/src/components/layout/Navbar';
 
 const _geist = Geist({ subsets: ['latin'] });
 const _geistMono = Geist_Mono({ subsets: ['latin'] });
@@ -47,6 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased bg-white">
+        {/* <Navbar variant="solid" showSearch={false}/> */}
 
         <AuthProvider>
           {children}
@@ -84,7 +86,7 @@ export default function RootLayout({
           />
         </AuthProvider>
         <Analytics />
-        <Footer/>
+        {/* <Footer/> */}
       </body>
     </html>
   );

@@ -1,24 +1,26 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiArrowLeft } from 'react-icons/fi';
 import { verifyOtp, sendOtp, verifyForgotOtp } from '@/src/api/services/AuthApi';
 import { ROUTES, VALIDATION } from '@/src/utils/constants';
+import OtpCodeInput from '@/src/components/auth/OtpCodeInput';
 
 export default function VerifyOtpClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email') || '';
+  const identifier = searchParams.get('email') || searchParams.get('identifier') || '';
   const purpose = parseInt(searchParams.get('purpose') || '1');
-
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpValue, setOtpValue] = useState('');
+  const [otpResetKey, setOtpResetKey] = useState('init');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const otpExpirySeconds = 120;
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -28,35 +30,9 @@ export default function VerifyOtpClient() {
     }
   }, [resendCountdown]);
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // Only allow digits
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Move to next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const otpValue = otp.join('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (otpValue.length !== VALIDATION.OTP_LENGTH) {
-      setError('Please enter a complete OTP');
-      return;
-    }
-
+  const verifyCode = useCallback(async (code: string) => {
+    if (code.length !== VALIDATION.OTP_LENGTH || isLoading) return;
+    setOtpValue(code);
     setIsLoading(true);
     setError('');
 
@@ -65,12 +41,12 @@ export default function VerifyOtpClient() {
 
       if (purpose === 2) {
         // Forgot password OTP verification
-        const result = await verifyForgotOtp(email, otpValue, purpose);
+        const result = await verifyForgotOtp(identifier, code, purpose);
         if (result.success && result.accessKey) {
           success = true;
           // Redirect to reset password with accessKey
           router.push(
-            `${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(email)}&accessKey=${encodeURIComponent(
+            `${ROUTES.RESET_PASSWORD}?identifier=${encodeURIComponent(identifier)}&accessKey=${encodeURIComponent(
               result.accessKey
             )}`
           );
@@ -79,7 +55,7 @@ export default function VerifyOtpClient() {
         }
       } else {
         // Signup OTP verification
-        success = await verifyOtp(email, otpValue, purpose);
+        success = await verifyOtp(identifier, code, purpose);
         if (success) {
           router.push(ROUTES.HOME);
         } else {
@@ -89,16 +65,29 @@ export default function VerifyOtpClient() {
     } finally {
       setIsLoading(false);
     }
+  }, [identifier, isLoading, purpose, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await verifyCode(otpValue);
+  };
+
+  const emailExpireMinutes = 2;
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleResendOtp = async () => {
     try {
-      const success = await sendOtp(email, purpose);
+      const success = await sendOtp(identifier, purpose, 0, emailExpireMinutes);
       if (success) {
-        setResendCountdown(60);
-        setOtp(['', '', '', '', '', '']);
+        setResendCountdown(otpExpirySeconds);
+        setOtpValue('');
+        setOtpResetKey(`${Date.now()}`);
         setError('');
-        inputRefs.current[0]?.focus();
       }
     } catch (err) {
       setError('Failed to resend OTP. Please try again.');
@@ -117,46 +106,31 @@ export default function VerifyOtpClient() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Verify OTP
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Image
+                src="/logo/logomain.jpg"
+                alt="UDealZone"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded object-cover"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Verify OTP</h1>
+            </div>
             <p className="text-gray-600 text-sm">
               We've sent a 6-digit code to<br />
-              <strong>{email}</strong>
+              <strong>{identifier}</strong>
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* OTP Input Fields */}
-            <div className="flex justify-center gap-2">
-              {otp.map((digit, index) => (
-                <motion.input
-                  key={index}
-                  ref={(el) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onFocus={(e) => e.target.select()}
-                  className="w-12 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#F97316] transition-colors"
-                  whileFocus={{ scale: 1.05 }}
-                />
-              ))}
-            </div>
-
-            {error && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm text-center"
-              >
-                {error}
-              </motion.p>
-            )}
+            <OtpCodeInput
+              resetKey={otpResetKey}
+              disabled={isLoading}
+              error={error}
+              onChange={setOtpValue}
+              onComplete={verifyCode}
+            />
 
             {/* Submit Button */}
             <motion.button
@@ -164,7 +138,7 @@ export default function VerifyOtpClient() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading || otpValue.length !== VALIDATION.OTP_LENGTH}
-              className="w-full py-2.5 bg-gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 gradient-primary text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Verifying...' : 'Verify OTP'}
             </motion.button>
@@ -181,7 +155,7 @@ export default function VerifyOtpClient() {
               className="text-[#F97316] hover:text-[#d97706] font-medium transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               {resendCountdown > 0
-                ? `Resend in ${resendCountdown}s`
+                ? `Resend in ${formatCountdown(resendCountdown)}`
                 : 'Resend OTP'}
             </button>
           </div>
