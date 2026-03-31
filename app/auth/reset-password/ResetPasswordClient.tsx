@@ -230,7 +230,6 @@ export default function ResetPasswordPage() {
               {isLoading ? 'Resetting...' : 'Reset Password'}
             </motion.button>
           </form>
-
           {/* Back */}
           <div className="mt-6">
             <Link
