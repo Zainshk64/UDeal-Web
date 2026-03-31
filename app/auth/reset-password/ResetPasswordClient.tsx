@@ -214,6 +214,7 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
+              
               {errors.confirmPassword && (
                 <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
               )}
