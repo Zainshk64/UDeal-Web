@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { FiHeart, FiMapPin, FiClock, FiStar } from 'react-icons/fi';
-import { FaHeart } from 'react-icons/fa';
-import { HomeAd } from '@/src/api/services/HomeApi';
-import { getImageUrl } from '@/src/utils/image';
-import { formatCurrency, formatTimeAgo } from '@/src/utils/format';
-import { useAuth } from '@/src/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { ROUTES } from '@/src/utils/constants';
-import { cn } from '@/src/utils/cn';
+import React, { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { FiHeart, FiMapPin, FiClock, FiStar } from "react-icons/fi";
+import { FaHeart } from "react-icons/fa";
+import { HomeAd } from "@/src/api/services/HomeApi";
+import { getImageUrl } from "@/src/utils/image";
+import { formatCurrency, formatTimeAgo } from "@/src/utils/format";
+import { useAuth } from "@/src/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/src/utils/constants";
+import { cn } from "@/src/utils/cn";
 
 interface ProductCardProps {
   product: HomeAd;
@@ -47,10 +47,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       }
       setIsFavorited(!isFavorited);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error("Error toggling favorite:", error);
       // Revert state if API fails
       setIsFavorited(isFavorited);
-      alert('Failed to update favorite. Please try again.');
+      alert("Failed to update favorite. Please try again.");
     } finally {
       setIsLoadingFavorite(false);
     }
@@ -59,7 +59,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const imageUrl = getImageUrl(product.PicPath);
 
   return (
-    <Link href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}`}>
+<Link href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}?isGeneral=true`}>
       <motion.div
         className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 h-full flex flex-col cursor-pointer group"
         whileHover={{ translateY: -4 }}
@@ -68,9 +68,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Image Section */}
         <div className="relative w-full h-48 bg-gray-200 overflow-hidden">
           {/* Product Type Badge */}
-          {(product.ProductType === 'Featured' || product.MarkAsSold) && (
+          {(product.ProductType === "Featured" || product.MarkAsSold) && (
             <div className="absolute top-3 left-3 z-10">
-              {product.ProductType === 'Featured' && (
+              {product.ProductType === "Featured" && (
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                   <FiStar className="w-3 h-3" />
                   Featured
@@ -119,14 +119,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Content Section */}
         <div className="flex-1 p-4 flex flex-col">
           {/* Title */}
-          <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2 text-sm">
+          <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2 text-md">
             {product.ProdcutTitle}
+          </h3>
+          <h3 className=" text-black/60 line-clamp-2 text-sm">
+            {product.ProductDescription.slice(0, 30)}...
           </h3>
 
           {/* Price */}
           <div className="mb-3 mt-auto">
             <p className="text-[#F97316] font-bold text-lg">
-              {formatCurrency(product.Price, 'PKR')}
+              {formatCurrency(product.Price, "PKR")}
             </p>
           </div>
 

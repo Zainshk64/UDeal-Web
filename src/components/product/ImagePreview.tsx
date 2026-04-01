@@ -118,24 +118,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             </span>
           </div>
 
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setZoom((z) => Math.max(z - 0.5, 1))}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <FiZoomOut className="w-5 h-5 text-white" />
-            </button>
-            <span className="text-white text-sm font-medium w-12 text-center">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              onClick={() => setZoom((z) => Math.min(z + 0.5, 5))}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <FiZoomIn className="w-5 h-5 text-white" />
-            </button>
-          </div>
+          
         </div>
 
         {/* Main Image Area */}
@@ -209,11 +192,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               ))}
             </div>
 
-            {/* Instructions */}
-            <p className="text-white/40 text-xs text-center mt-3">
-              ← → Arrow keys to navigate • +/- to zoom • Esc to
-              close
-            </p>
+           
           </div>
         )}
       </motion.div>

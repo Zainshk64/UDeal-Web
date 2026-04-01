@@ -5,25 +5,30 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FiMail, FiArrowLeft } from 'react-icons/fi';
-import { sendOtp } from '@/src/api/services/AuthApi';
+import { FiMail, FiArrowLeft, FiSmartphone } from 'react-icons/fi';
+import {
+  isEmailIdentifier,
+  isPhoneIdentifier,
+  sendIdentifierOtp,
+} from '@/src/api/services/AuthApi';
 import { ROUTES } from '@/src/utils/constants';
-import { validateEmail } from '@/src/utils/format';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedIdentifier, setSubmittedIdentifier] = useState('');
 
   const validateForm = (): boolean => {
-    if (!email.trim()) {
-      setError('Email is required');
+    const value = identifier.trim();
+    if (!value) {
+      setError('Email or mobile number is required');
       return false;
     }
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email');
+    if (!isEmailIdentifier(value) && !isPhoneIdentifier(value)) {
+      setError('Please enter a valid email or Pakistani mobile number');
       return false;
     }
     setError('');
@@ -37,12 +42,20 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      const success = await sendOtp(email, 2, 0, 2); // purpose 2 = forgot password; email OTP expires in 2 minutes
+      const normalized = identifier.trim();
+      const expireMinutes = isPhoneIdentifier(normalized) ? 5 : 2;
+      const result = await sendIdentifierOtp(normalized, 2, 0, expireMinutes);
+      const success = result.success;
       if (success) {
+        setSubmittedIdentifier(result.normalizedIdentifier);
         setIsSubmitted(true);
         // Redirect to verify OTP page after a delay
         setTimeout(() => {
-          router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(email)}&purpose=2`);
+          router.push(
+            `${ROUTES.VERIFY_OTP}?identifier=${encodeURIComponent(
+              result.normalizedIdentifier
+            )}&purpose=2`
+          );
         }, 2000);
       }
     } finally {
@@ -68,7 +81,8 @@ export default function ForgotPasswordPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h2>
           <p className="text-gray-600 mb-6">
-            We've sent an OTP to <strong>{email}</strong>. Check your inbox and follow the instructions to reset your password.
+            We&apos;ve sent an OTP to <strong>{submittedIdentifier}</strong>. Check your inbox/SMS
+            and follow the instructions to reset your password.
           </p>
           <p className="text-sm text-gray-500">Redirecting you to verify OTP...</p>
         </motion.div>
@@ -98,29 +112,30 @@ export default function ForgotPasswordPage() {
               />
               <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
             </div>
-            <p className="text-gray-600">Enter your email to receive an OTP</p>
+            <p className="text-gray-600">Enter your email or mobile to receive an OTP</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+            {/* Identifier Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                Email or Mobile
               </label>
               <div className="relative">
                 <FiMail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                <FiSmartphone className="absolute left-9 top-3.5 w-4 h-4 text-gray-300" />
                 <input
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={identifier}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    setIdentifier(e.target.value);
                     if (error) setError('');
                   }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
+                  className={`w-full pl-14 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-colors ${
                     error ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="your@email.com"
+                  placeholder="your@email.com or 3XXXXXXXXX"
                 />
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}

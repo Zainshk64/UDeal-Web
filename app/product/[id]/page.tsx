@@ -1,27 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import {
-  FiArrowLeft,
-  FiShare2,
-  FiHeart,
-  FiFileText,
-} from 'react-icons/fi';
-import { FaHeart } from 'react-icons/fa';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { FiArrowLeft, FiShare2, FiHeart, FiFileText } from "react-icons/fi";
+import { FaHeart } from "react-icons/fa";
+import { toast } from "sonner";
 
-import { Navbar } from '@/src/components/layout/Navbar';
-import { Container } from '@/src/components/ui/Container';
-import { ImageGallery } from '@/src/components/product/ImageGallery';
-import { ProductInfo } from '@/src/components/product/ProductInfo';
-import { ProductDetailsSection } from '@/src/components/product/ProductDetails';
-import { SellerCard } from '@/src/components/product/SellerCard';
-import { SafetyTips } from '@/src/components/product/SafetyTips';
-import { ReportAdModal } from '@/src/components/product/ReportAdModal';
-import { ProductDetailSkeleton } from '@/src/components/product/ProductDetailSkeleton';
-import { Footer } from '@/src/components/layout/Footer';
+import { Container } from "@/src/components/ui/Container";
+import { ImageGallery } from "@/src/components/product/ImageGallery";
+import { ProductInfo } from "@/src/components/product/ProductInfo";
+import { ProductDetailsSection } from "@/src/components/product/ProductDetails";
+import { SellerCard } from "@/src/components/product/SellerCard";
+import { SafetyTips } from "@/src/components/product/SafetyTips";
+import { ReportAdModal } from "@/src/components/product/ReportAdModal";
+import { ProductDetailSkeleton } from "@/src/components/product/ProductDetailSkeleton";
 
 import {
   getProductById,
@@ -29,19 +22,21 @@ import {
   ProductDetail,
   ProductPicture,
   ProductMetaData,
-} from '@/src/api/services/HomeApi';
-import { reportAd } from '@/src/api/services/SellerApi';
-import { useAuth } from '@/src/context/AuthContext';
-import { useFavorite } from '@/hooks/useFavorite';
-import { useProductSession } from '@/hooks/useProductSession';
-import { cn } from '@/src/utils/cn';
-import { ImageViewer } from '@/src/components/product/ImagePreview';
+} from "@/src/api/services/HomeApi";
+import { reportAd } from "@/src/api/services/SellerApi";
+import { useAuth } from "@/src/context/AuthContext";
+import { useFavorite } from "@/hooks/useFavorite";
+import { useProductSession } from "@/hooks/useProductSession";
+import { cn } from "@/src/utils/cn";
+import { ImageViewer } from "@/src/components/product/ImagePreview";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const productId = params?.id ? Number(params.id) : undefined;
+  const searchParams = useSearchParams();
+  const isGeneral = searchParams.get("isgeneral") !== "false"; // defaults to true
 
   // Track session
   useProductSession(productId);
@@ -49,9 +44,7 @@ export default function ProductDetailPage() {
   // State
   const [data, setData] = useState<ProductDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [localFavorite, setLocalFavorite] = useState<boolean | null>(
-    null
-  );
+  const [localFavorite, setLocalFavorite] = useState<boolean | null>(null);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -59,7 +52,6 @@ export default function ProductDetailPage() {
 
   const { loadingFavId, handleFavoriteToggle } = useFavorite();
 
-  // Fetch product data
   useEffect(() => {
     if (!productId) return;
 
@@ -67,23 +59,20 @@ export default function ProductDetailPage() {
       setLoading(true);
       const response = await getProductById(
         productId,
-        true, // isGeneral = true for view count
-        user?.userId || 0
+        isGeneral, // true = count view, false = don't count (own ad)
+        user?.userId || 0,
       );
       setData(response);
 
       if (response?.Details?.[0]) {
-        setLocalFavorite(
-          response.Details[0].IsFavorite === true
-        );
+        setLocalFavorite(response.Details[0].IsFavorite === true);
       }
 
       setLoading(false);
     };
 
     fetchProduct();
-  }, [productId, user?.userId]);
-
+  }, [productId, user?.userId, isGeneral]);
   // Handlers
   const handleShare = async () => {
     const detail = data?.Details?.[0];
@@ -101,12 +90,12 @@ export default function ProductDetailPage() {
         });
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link Copied', {
-          description: 'Product link copied to clipboard',
+        toast.success("Link Copied", {
+          description: "Product link copied to clipboard",
         });
       }
     } catch (error) {
-      console.error('Share error:', error);
+      console.error("Share error:", error);
     }
   };
 
@@ -114,25 +103,17 @@ export default function ProductDetailPage() {
     if (!data?.Details?.[0]) return;
 
     const detail = data.Details[0];
-    const currentFavStatus =
-      localFavorite ?? detail.IsFavorite === true;
+    const currentFavStatus = localFavorite ?? detail.IsFavorite === true;
 
-    await handleFavoriteToggle(
-      detail.ProductId,
-      currentFavStatus,
-      () => {
-        setLocalFavorite((prev) => !prev);
-      }
-    );
+    await handleFavoriteToggle(detail.ProductId, currentFavStatus, () => {
+      setLocalFavorite((prev) => !prev);
+    });
   };
 
-  const handleReportAd = async (
-    keyword: string,
-    comment: string
-  ) => {
+  const handleReportAd = async (keyword: string, comment: string) => {
     if (!isAuthenticated || !user?.userId) {
-      toast.info('Login Required', {
-        description: 'Please login to report this ad',
+      toast.info("Login Required", {
+        description: "Please login to report this ad",
       });
       setReportModalVisible(false);
       return;
@@ -150,9 +131,9 @@ export default function ProductDetailPage() {
     setReportLoading(false);
     setReportModalVisible(false);
 
-    toast[res.success ? 'success' : 'error'](
-      res.success ? 'Report Submitted' : 'Report Failed',
-      { description: res.message }
+    toast[res.success ? "success" : "error"](
+      res.success ? "Report Submitted" : "Report Failed",
+      { description: res.message },
     );
   };
 
@@ -160,8 +141,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <>
-        <Navbar variant="solid" showSearch={false} />
-        <div className="pt-24">
+        <div>
           <ProductDetailSkeleton />
         </div>
       </>
@@ -172,8 +152,7 @@ export default function ProductDetailPage() {
   if (!data || !data.Details?.[0]) {
     return (
       <>
-        <Navbar variant="solid" showSearch={false} />
-        <div className="pt-24 min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center px-6">
             <div className="w-24 h-24 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
               <span className="text-5xl">😕</span>
@@ -185,7 +164,7 @@ export default function ProductDetailPage() {
               This ad may have been removed or is no longer available.
             </p>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push("/")}
               className="bg-[#F97316] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#ea580c] transition-colors"
             >
               Go Home
@@ -199,15 +178,14 @@ export default function ProductDetailPage() {
   // Main render
   const detail: ProductDetail = data.Details[0];
   const pictures: ProductPicture[] = data.Pictures || [];
-  const metaData: ProductMetaData = data.MetaData?.[0] || ({} as ProductMetaData);
+  const metaData: ProductMetaData =
+    data.MetaData?.[0] || ({} as ProductMetaData);
   const isFavorited = localFavorite ?? detail.IsFavorite === true;
   const isLoadingFav = loadingFavId === detail.ProductId;
 
   return (
     <>
-      <Navbar variant="solid" showSearch={false} />
-
-      <main className="pt-24 pb-20 lg:pb-8 min-h-screen bg-gray-50">
+      <main className="py-28 min-h-screen bg-gray-50">
         {/* Breadcrumb / Back */}
         <Container className="py-4">
           <div className="flex items-center justify-between">
@@ -339,10 +317,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </Container>
-
-    
       </main>
-
 
       {/* Image Viewer Modal */}
       <ImageViewer

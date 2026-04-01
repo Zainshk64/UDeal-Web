@@ -162,8 +162,28 @@ export const EditAdModal: React.FC<EditAdModalProps> = ({
         ProvinceId: 'ProvinceName', RegCityId: 'RegCityName',
       };
 
+      const altNameMap: Record<string, string[]> = {
+        FuelId: ['FuelType', 'FuelName'],
+        TransId: ['Transmission', 'TransName'],
+        ConditionId: ['Conditon', 'ConditionName'],
+        Documents: ['Documents'],
+        EngineAssembly: ['EngineAssembly'],
+        MakeCompanyId: ['MakeCompany'],
+        BrandId: ['BrandName', 'ModelName'],
+        ColorId: ['ColorName'],
+        MakeYearId: ['MakeYear'],
+      };
+
       Object.entries(nameMap).forEach(([idKey, nameKey]) => {
         if (detail[nameKey]) initNames[idKey] = detail[nameKey];
+      });
+
+      Object.entries(altNameMap).forEach(([field, nameKeys]) => {
+        if (initNames[field]) return;
+        const found = nameKeys.find((k) => detail[k]);
+        if (found) {
+          initNames[field] = detail[found];
+        }
       });
 
       setFormData(initData);

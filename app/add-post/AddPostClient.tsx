@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '@/src/context/AuthContext';
-import { Navbar } from '@/src/components/layout/Navbar';
 import { Step1Category } from '@/src/components/addpost/Step1Category';
 import { Step2Subcategory } from '@/src/components/addpost/Step2Subcategory';
 import { ROUTES } from '@/src/utils/constants';
@@ -61,17 +60,11 @@ export default function AddPostPage() {
   };
 
   if (authLoading) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-white" />
-      </>
-    );
+    return <div className="min-h-screen bg-white" />;
   }
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-white">
         {/* Header */}
         <section className="gradient-primary text-white pt-44 pb-20 px-4 sm:px-6 lg:px-8">

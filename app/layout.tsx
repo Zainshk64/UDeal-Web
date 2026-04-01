@@ -4,8 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/src/context/AuthContext';
 import './globals.css';
-import Footer from '@/src/components/layout/Footer';
-import { Navbar } from '@/src/components/layout/Navbar';
+import SiteChrome from '@/src/components/layout/SiteChrome';
 
 const _geist = Geist({ subsets: ['latin'] });
 const _geistMono = Geist_Mono({ subsets: ['latin'] });
@@ -48,10 +47,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased bg-white">
-        {/* <Navbar variant="solid" showSearch={false}/> */}
-
         <AuthProvider>
-          {children}
+          <SiteChrome>{children}</SiteChrome>
           <Toaster
             position="top-right"
             expand={false}
@@ -86,7 +83,6 @@ export default function RootLayout({
           />
         </AuthProvider>
         <Analytics />
-        {/* <Footer/> */}
       </body>
     </html>
   );

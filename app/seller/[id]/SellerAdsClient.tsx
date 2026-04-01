@@ -5,13 +5,11 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
 
-import { Navbar } from '@/src/components/layout/Navbar';
 import { Container } from '@/src/components/ui/Container';
 import { SellerHeader } from '@/src/components/seller/SellerHeader';
 import { SellerProductCard } from '@/src/components/seller/SellerProductCard';
 import { SellerAdSkeleton } from '@/src/components/seller/SellerAdSkeleton';
 import { Pagination } from '@/src/components/seller/Pagination';
-import { Footer } from '@/src/components/layout/Footer';
 
 import {
   getProductsByUser,
@@ -56,9 +54,7 @@ export default function SellerAdsClient() {
 
   return (
     <>
-      <Navbar variant="solid" showSearch={false} />
-
-      <main className="pt-24 pb-8 min-h-screen bg-gray-50">
+      <main className="py-28 min-h-screen bg-gray-50">
         <Container className="py-4">
           <button
             onClick={() => router.back()}
@@ -141,8 +137,6 @@ export default function SellerAdsClient() {
           </div>
         </Container>
       </main>
-
-      <Footer />
     </>
   );
 }

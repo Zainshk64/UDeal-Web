@@ -163,7 +163,7 @@ export const toggleFavorite = async (
 
 export const getProductById = async (
   id: number,
-  isgeneral: boolean = false,
+  isgeneral: boolean,
   userId: number | null = null
 ): Promise<ProductDetailResponse | null> => {
   try {

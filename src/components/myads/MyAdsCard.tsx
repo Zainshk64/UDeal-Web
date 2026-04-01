@@ -58,14 +58,14 @@ export const MyAdCard: React.FC<MyAdCardProps> = ({
 
   const statusBadge = () => {
     if (ad.markAsSold) return { label: 'Sold', color: 'bg-gray-500' };
-    if (!ad.enable) return { label: 'Pending', color: 'bg-yellow-500' };
+    if (!ad.enable) return { label: 'Pending Review', color: 'bg-yellow-500' };
     return { label: 'Active', color: 'bg-green-500' };
   };
 
   const status = statusBadge();
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
       {/* Main Content Row */}
       <div className="flex flex-col sm:flex-row">
         {/* Image */}
@@ -164,7 +164,7 @@ export const MyAdCard: React.FC<MyAdCardProps> = ({
               <FiTag />
             )
           }
-          label={ad.markAsSold ? 'Sold' : 'Sold?'}
+          label={ad.markAsSold ? 'Sold' : 'Mark Sold'}
           color={ad.markAsSold ? 'text-gray-400' : 'text-orange-600'}
           bgColor={ad.markAsSold ? 'bg-gray-200' : 'bg-orange-100'}
           onClick={() => onMarkSold(ad.productId)}

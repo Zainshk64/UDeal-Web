@@ -18,8 +18,6 @@ import {
 import { FaHeart } from 'react-icons/fa';
 import { toast } from 'sonner';
 
-import { Navbar } from '@/src/components/layout/Navbar';
-import { Footer } from '@/src/components/layout/Footer';
 import { Container } from '@/src/components/ui/Container';
 import { Pagination } from '@/src/components/seller/Pagination';
 import { useAuth } from '@/src/context/AuthContext';
@@ -146,7 +144,7 @@ export default function CityPage() {
     <>
       {/* <Navbar variant="solid" showSearch={false} /> */}
 
-      <main className="pt-24 pb-8 min-h-screen bg-gray-50">
+      <main className="pt-24 py-28 min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#003049] to-[#004d6d] py-8">
           <Container>

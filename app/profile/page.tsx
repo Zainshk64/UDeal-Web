@@ -253,7 +253,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-28">
       <div className="mx-auto max-w-4xl space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -262,13 +262,13 @@ export default function ProfilePage() {
         >
           <div className="bg-gradient-to-r from-[#003049] to-[#004d6d] p-6 text-white">
             <div className="flex items-center gap-3">
-              <Image
+              {/* <Image
                 src="/logo/logomain.jpg"
                 alt="UDealZone"
                 width={34}
                 height={34}
                 className="h-9 w-9 rounded-lg object-cover"
-              />
+              /> */}
               <h1 className="text-2xl font-bold">Profile Settings</h1>
             </div>
             <p className="mt-1 text-sm text-white/80">

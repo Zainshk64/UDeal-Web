@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { FiUser, FiPhone, FiFlag, FiChevronRight } from 'react-icons/fi';
-import { ProductDetail, ProductMetaData } from '@/src/api/services/HomeApi';
-import { getImageUrl } from '@/src/utils/image';
-import { useAuth } from '@/src/context/AuthContext';
-import { toast } from 'sonner';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { FiUser, FiPhone, FiFlag, FiChevronRight } from "react-icons/fi";
+import { ProductDetail, ProductMetaData } from "@/src/api/services/HomeApi";
+import { getImageUrl } from "@/src/utils/image";
+import { useAuth } from "@/src/context/AuthContext";
+import { toast } from "sonner";
 
 interface SellerCardProps {
   metaData: ProductMetaData;
@@ -16,7 +16,7 @@ interface SellerCardProps {
 }
 
 const DEFAULT_AVATAR =
-  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOUpQ0yJ-GLCDwMUYymx931h0RWBEheBfF6g&s';
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOUpQ0yJ-GLCDwMUYymx931h0RWBEheBfF6g&s";
 
 export const SellerCard: React.FC<SellerCardProps> = ({
   metaData,
@@ -33,32 +33,32 @@ export const SellerCard: React.FC<SellerCardProps> = ({
 
   const handleCallClick = () => {
     if (!isAuthenticated) {
-      toast.info('Login Required', {
-        description: 'Please login to see contact number',
+      toast.info("Login Required", {
+        description: "Please login to see contact number",
       });
       return;
     }
     if (metaData.MobileNo) {
-      window.open(`tel:${metaData.MobileNo}`, '_self');
+      window.open(`tel:${metaData.MobileNo}`, "_self");
     }
   };
 
   const handleChatClick = () => {
     if (!isAuthenticated) {
-      toast.info('Login Required', {
-        description: 'Please login to chat with the seller',
+      toast.info("Login Required", {
+        description: "Please login to chat with the seller",
       });
       return;
     }
-    toast.info('Coming Soon', {
-      description: 'Chat feature will be available soon',
+    toast.info("Coming Soon", {
+      description: "Chat feature will be available soon",
     });
   };
 
   const handleReportClick = () => {
     if (!isAuthenticated) {
-      toast.info('Login Required', {
-        description: 'Please login to report this ad',
+      toast.info("Login Required", {
+        description: "Please login to report this ad",
       });
       return;
     }
@@ -72,21 +72,19 @@ export const SellerCard: React.FC<SellerCardProps> = ({
         <div className="w-9 h-9 bg-yellow-100 rounded-xl flex items-center justify-center">
           <FiUser className="w-5 h-5 text-amber-600" />
         </div>
-        <h3 className="text-lg font-bold text-[#003049]">
-          Ad Posted By
-        </h3>
+        <h3 className="text-lg font-bold text-[#003049]">Ad Posted By</h3>
       </div>
 
       {/* Seller Info */}
       <div className="p-4">
         <Link
-          href={`/seller/${metaData.Uid}?name=${encodeURIComponent(metaData.Name || 'Seller')}&pic=${encodeURIComponent(metaData.PicPath || '')}&phone=${encodeURIComponent(metaData.MobileNo || '')}&joined=${encodeURIComponent(metaData.JoinedDate || '')}&totalAds=${metaData.TotalAdsPosted || 0}`}
+          href={`${isAuthenticated ? `/seller/${metaData.Uid}?name=${encodeURIComponent(metaData.Name || "Seller")}&pic=${encodeURIComponent(metaData.PicPath || "")}&phone=${encodeURIComponent(metaData.MobileNo || "")}&joined=${encodeURIComponent(metaData.JoinedDate || "")}&totalAds=${metaData.TotalAdsPosted || 0}` : "/auth/login"}`}
           className="flex items-center gap-3 group"
         >
           <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
             <Image
               src={avatarUrl}
-              alt={metaData.Name || 'Seller'}
+              alt={metaData.Name || "Seller"}
               width={56}
               height={56}
               className="w-14 h-14 object-cover"
@@ -94,7 +92,7 @@ export const SellerCard: React.FC<SellerCardProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-gray-900 font-semibold group-hover:text-[#F97316] transition-colors truncate">
-              {metaData.Name || 'Seller'}
+              {metaData.Name || "Seller"}
             </p>
             {isAuthenticated && metaData.MobileNo ? (
               <p className="text-gray-500 text-sm mt-0.5">

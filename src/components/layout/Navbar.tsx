@@ -163,11 +163,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                           key={cat.id}
                           onClick={() => {
                             setIsCategoryOpen(false);
-                            // router.push(
-                            //   `${ROUTES.CATEGORY}/${cat.id}`
-                            // );
+                            router.push(`${ROUTES.CATEGORY}/${cat.id}`);
                           }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          className="flex items-center cursor-pointer gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
                         >
                           <img
                             src={cat.image}
@@ -357,7 +355,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {isAuthenticated ? (
                   <>
                     {/* User Info Card */}
-                    <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#003049] to-[#004d6d] rounded-xl mb-3">
+                    <Link href={'/profile'} 
+                      onClick={() => setIsMenuOpen(false)}
+
+                    className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#003049] to-[#004d6d] rounded-xl mb-3">
                       <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
                         {user?.name?.[0]?.toUpperCase() || 'U'}
                       </div>
@@ -374,7 +375,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </p>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Post Ad Button */}
                     <Button
@@ -393,14 +394,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full"
                       icon={<FiHeart className="w-5 h-5" />}
                       onClick={() => {
-                        router.push(ROUTES.ADD_POST);
+                        router.push(ROUTES.MY_ADS);
                         setIsMenuOpen(false);
                       }}
                     >
                       My Ads
                     </Button>
 
-                    <ProfileMenu/>
+                    {showCategoryDropdown && (
+                      <div className="mt-3 border-t border-gray-200 pt-3">
+                        <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Categories
+                        </p>
+                        <div className="grid grid-cols-1 gap-1">
+                          {CATEGORIES.slice(0, 8).map((cat) => (
+                            <button
+                              key={`mobile-${cat.id}`}
+                              onClick={() => {
+                                router.push(`${ROUTES.CATEGORY}/${cat.id}`);
+                                setIsMenuOpen(false);
+                              }}
+                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <img
+                                src={cat.image}
+                                alt=""
+                                width={24}
+                                className="rounded"
+                              />
+                              <span>{cat.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* <ProfileMenu/> */}
                   </>
                 ) : (
                   <>

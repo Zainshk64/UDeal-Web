@@ -6,7 +6,12 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiArrowLeft } from 'react-icons/fi';
-import { verifyOtp, sendOtp, verifyForgotOtp } from '@/src/api/services/AuthApi';
+import {
+  isPhoneIdentifier,
+  sendIdentifierOtp,
+  verifyForgotOtp,
+  verifyIdentifierOtp,
+} from '@/src/api/services/AuthApi';
 import { ROUTES, VALIDATION } from '@/src/utils/constants';
 import OtpCodeInput from '@/src/components/auth/OtpCodeInput';
 
@@ -20,7 +25,7 @@ export default function VerifyOtpClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
-  const otpExpirySeconds = 120;
+  const otpExpirySeconds = isPhoneIdentifier(identifier) ? 300 : 120;
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -54,8 +59,9 @@ export default function VerifyOtpClient() {
           setError(result.message || 'OTP verification failed');
         }
       } else {
-        // Signup OTP verification
-        success = await verifyOtp(identifier, code, purpose);
+        // General OTP verification (email/mobile)
+        const result = await verifyIdentifierOtp(identifier, code, purpose);
+        success = result.success;
         if (success) {
           router.push(ROUTES.HOME);
         } else {
@@ -82,7 +88,9 @@ export default function VerifyOtpClient() {
 
   const handleResendOtp = async () => {
     try {
-      const success = await sendOtp(identifier, purpose, 0, emailExpireMinutes);
+      const expireMinutes = isPhoneIdentifier(identifier) ? 5 : emailExpireMinutes;
+      const result = await sendIdentifierOtp(identifier, purpose, 0, expireMinutes);
+      const success = result.success;
       if (success) {
         setResendCountdown(otpExpirySeconds);
         setOtpValue('');
