@@ -8,7 +8,7 @@ import { Container } from "../ui/Container";
 import { useRouter } from "next/navigation";
 
 export const CategoryStrip: React.FC = () => {
-    const router = useRouter();
+  const router = useRouter();
 
   return (
     <div className="relative -mt-13 z-20" id="categories">
@@ -20,7 +20,7 @@ export const CategoryStrip: React.FC = () => {
           className="bg-white/50 rounded-2xl shadow-lg backdrop-blur-3xl p-4 border border-gray-100"
         >
           {/* Scrollable Container */}
-          <div className="flex overflow-x-auto pb-2 scrollbar-hide md:grid md:grid-cols-5 lg:grid-cols-10 md:overflow-visible">
+          <div className="flex overflow-x-auto scrollbar-hide md:grid md:grid-cols-5 lg:grid-cols-10 md:overflow-visible">
             {CATEGORIES.map((category, index) => (
               <motion.div
                 key={category.id}
@@ -33,8 +33,8 @@ export const CategoryStrip: React.FC = () => {
                   icon={category.icon}
                   image={category.image}
                   onClick={() => {
-        router.push(`/category/${category.id}`);
-      }}
+                    router.push(`/category/${category.id}`);
+                  }}
                 />
               </motion.div>
             ))}

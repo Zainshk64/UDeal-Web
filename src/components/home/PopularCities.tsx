@@ -21,7 +21,7 @@ export const PopularCities: React.FC<PopularCitiesProps> = ({
 
   return (
     <section className={cn("py-8", className)}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -64,11 +64,11 @@ export const PopularCities: React.FC<PopularCitiesProps> = ({
                 // }}
                 className="block"
               >
-                <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 group-hover:border-[#F97316]/50 group-hover:scale-105">
+                <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 group-hover:border-[#F97316]/50 group-hover:scale-105">
                   {/* <div className="w-12 h-12 bg-gradient-to-br from-[#F97316]/10 to-[#003049]/10 rounded-full flex items-center justify-center mb-4 group-hover:from-[#F97316]/20 group-hover:to-[#003049]/20">
                     <span className="text-2xl">📍</span>
                   </div> */}
-                  <h3 className="font-semibold text-gray-900 text-center group-hover:text-[#F97316] transition-colors">
+                  <h3 className="font-semibold text-gray-900 text-lg text-center group-hover:text-[#F97316] transition-colors">
                     {city.CityName}
                   </h3>
                 </div>

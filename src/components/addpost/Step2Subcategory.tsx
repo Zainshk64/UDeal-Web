@@ -6,14 +6,14 @@ import { getSubcategories } from '@/src/api/services/HomeApi';
 import { CATEGORIES } from '@/src/utils/constants';
 
 interface Subcategory {
-  SubCategoryId: number;
-  SubCategoryName: string;
+  subCatId: number;
+  subcategoryName: string;
 }
 
 interface Step2SubcategoryProps {
   categoryId: number;
   selectedSubcategory: number | null;
-  onSelect: (subcategoryId: number) => void;
+  onSelect: (subcategoryId: number, subcategoryName: string) => void;
 }
 
 export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
@@ -33,8 +33,10 @@ export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
       setError('');
       try {
         const data = await getSubcategories(categoryId);
-        setSubcategories(data);
+        console.log('Subcategories response:', data); // Debug log
+        setSubcategories(data || []);
       } catch (err) {
+        console.error('Error loading subcategories:', err);
         setError('Failed to load subcategories');
       } finally {
         setIsLoading(false);
@@ -53,7 +55,7 @@ export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
         <p className="text-gray-600">
           Choose a subcategory for{' '}
           <span className="font-semibold text-[#003049]">
-            {category?.name}
+            {category?.name || 'this category'}
           </span>
         </p>
       </div>
@@ -83,13 +85,15 @@ export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {subcategories.map((subcategory, index) => (
             <motion.button
-              key={subcategory.SubCategoryId}
+              key={subcategory.subCatId}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => onSelect(subcategory.SubCategoryId)}
+              onClick={() =>
+                onSelect(subcategory.subCatId, subcategory.subcategoryName)
+              }
               className={`p-6 rounded-lg border-2 transition-all text-center cursor-pointer ${
-                selectedSubcategory === subcategory.SubCategoryId
+                selectedSubcategory === subcategory.subCatId
                   ? 'border-[#F97316] bg-orange-50 shadow-lg'
                   : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
               }`}
@@ -97,9 +101,9 @@ export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
               whileTap={{ scale: 0.98 }}
             >
               <h3 className="font-semibold text-gray-900 text-base">
-                {subcategory.SubCategoryName}
+                {subcategory.subcategoryName}
               </h3>
-              {selectedSubcategory === subcategory.SubCategoryId && (
+              {selectedSubcategory === subcategory.subCatId && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -133,8 +137,8 @@ export const Step2Subcategory: React.FC<Step2SubcategoryProps> = ({
         >
           <p className="text-blue-900 text-sm">
             <strong>Selected:</strong>{' '}
-            {subcategories.find((s) => s.SubCategoryId === selectedSubcategory)
-              ?.SubCategoryName}
+            {subcategories.find((s) => s.subCatId === selectedSubcategory)
+              ?.subcategoryName}
           </p>
           <p className="text-blue-800 text-xs mt-1">
             Click Next to continue with product details

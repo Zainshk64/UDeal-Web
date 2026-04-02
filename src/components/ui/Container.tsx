@@ -22,10 +22,10 @@ const maxWidthClasses = {
 export const Container: React.FC<ContainerProps> = ({
   children,
   className,
-  maxWidth = '7xl',
+  maxWidth = '8xl',
 }) => {
   return (
-    <div className={cn('mx-auto px-4 sm:px-6 lg:px-8', maxWidthClasses[maxWidth], className)}>
+    <div className={cn('mx-auto px-4 sm:px-6 lg:px-16', maxWidthClasses[maxWidth], className)}>
       {children}
     </div>
   );

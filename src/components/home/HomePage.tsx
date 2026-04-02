@@ -183,10 +183,12 @@ export const HomePage: React.FC = () => {
 
         {/* Popular Cities */}
         {homeData?.cities && homeData.cities.length > 0 && (
-          <PopularCities
-            cities={homeData.cities}
-            // onCityClick={handleCityClick}
-          />
+          <Container>
+            <PopularCities
+              cities={homeData.cities}
+              // onCityClick={handleCityClick}
+            />
+          </Container>
         )}
 
         {/* Products Section */}

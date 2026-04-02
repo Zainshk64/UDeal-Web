@@ -11,12 +11,16 @@ export interface DropdownOption {
 
 export interface FormFieldResponse {
   activeFields: { FieldName: string }[];
+  /** Minimum allowed price for this subcategory, when configured */
+  priceRange?: { MinPrice: number }[];
   provinces?: { Id: number; Name: string }[];
   makeYears?: { Id: number; Name: string }[];
   fuelTypes?: { Id: number; Name: string }[];
   transmissions?: { Id: number; Name: string }[];
   colors?: { Id: number; Name: string }[];
   conditions?: { Id: number; Name: string }[];
+  UnitAreas?: { Id: number; Name: string; Area?: string }[];
+  [key: string]: unknown;
 }
 
 // ============================================

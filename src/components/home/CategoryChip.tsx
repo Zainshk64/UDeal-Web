@@ -25,7 +25,7 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center cursor-pointer p-4 mr-3 rounded-xl transition-all duration-300 group",
+        "flex flex-col items-center cursor-pointer p-4 rounded-xl transition-all duration-300 group",
         className,
       )}
     >

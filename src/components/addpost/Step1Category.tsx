@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { CATEGORIES } from '@/src/utils/constants';
 
@@ -29,7 +30,7 @@ export const Step1Category: React.FC<Step1CategoryProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={() => onSelect(category.id)}
-            className={`p-6 rounded-lg border-2 transition-all text-center cursor-pointer ${
+            className={`cursor-pointer rounded-xl border-2 p-5 text-center transition-all sm:p-6 ${
               selectedCategory === category.id
                 ? 'border-[#F97316] bg-orange-50 shadow-lg'
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
@@ -37,8 +38,20 @@ export const Step1Category: React.FC<Step1CategoryProps> = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="text-4xl mb-3">{category.icon}</div>
-            <h3 className="font-semibold text-gray-900 text-base">{category.name}</h3>
+            <div className="relative mx-auto mb-3 flex h-16 w-16 items-center justify-center sm:h-20 sm:w-20">
+              {'image' in category && category.image ? (
+                <Image
+                  src={category.image}
+                  alt=""
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <span className="text-4xl">{'icon' in category ? category.icon : ''}</span>
+              )}
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">{category.name}</h3>
             {selectedCategory === category.id && (
               <motion.div
                 initial={{ scale: 0 }}

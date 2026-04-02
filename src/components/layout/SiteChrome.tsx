@@ -12,7 +12,7 @@ export default function SiteChrome({
 }) {
   const pathname = usePathname();
   const isAuthRoute = pathname.startsWith('/auth');
-  const isHome = pathname === '/' ||  pathname.startsWith('/product') || pathname.startsWith('/category');
+  const isHome = pathname === '/' ||  pathname.startsWith('/product') || pathname.startsWith('/category') || pathname.startsWith('/city');
   const isGrayBackgroundRoute =
     pathname.startsWith('/profile') ||
     pathname.startsWith('/my-ads') ||

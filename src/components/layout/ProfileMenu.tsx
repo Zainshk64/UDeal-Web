@@ -1,28 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, usePathname } from "next/navigation";
 import {
   FiUser,
   FiHeart,
   FiSettings,
   FiLogOut,
   FiPackage,
-} from 'react-icons/fi';
-import { useAuth } from '@/src/context/AuthContext';
-import { logout } from '@/src/api/services/AuthApi';
-import { ROUTES } from '@/src/utils/constants';
-import { cn } from '@/src/utils/cn';
-import { toast } from 'sonner';
+} from "react-icons/fi";
+import { useAuth } from "@/src/context/AuthContext";
+import { logout } from "@/src/api/services/AuthApi";
+import { ROUTES } from "@/src/utils/constants";
+import { cn } from "@/src/utils/cn";
+import { toast } from "sonner";
+import { getImageUrl } from "@/src/utils/image";
 
 interface ProfileMenuProps {
   className?: string;
 }
 
-export const ProfileMenu: React.FC<ProfileMenuProps> = ({
-  className,
-}) => {
+export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, refreshAuth } = useAuth();
@@ -33,17 +32,13 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () =>
-      document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -58,11 +53,11 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       const protectedRoutes = [
         ROUTES.MY_ADS,
         ROUTES.ADD_POST,
-        '/settings',
-        '/favorites',
+        "/settings",
+        "/favorites",
       ];
       const isProtected = protectedRoutes.some((route) =>
-        pathname.startsWith(route)
+        pathname.startsWith(route),
       );
 
       if (isProtected) {
@@ -70,9 +65,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       }
       // Otherwise stay on current page
     } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout Failed', {
-        description: 'Please try again.',
+      console.error("Logout error:", error);
+      toast.error("Logout Failed", {
+        description: "Please try again.",
       });
     } finally {
       setIsLoggingOut(false);
@@ -82,44 +77,52 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   const menuItems = [
     {
       icon: FiUser,
-      label: 'My Profile',
+      label: "My Profile",
       href: ROUTES.PROFILE,
     },
     {
       icon: FiPackage,
-      label: 'My Ads',
+      label: "My Ads",
       href: ROUTES.MY_ADS,
     },
     {
       icon: FiHeart,
-      label: 'Favorites',
-      href: '/favorites',
+      label: "Favorites",
+      href: "/favorites",
     },
     {
       icon: FiSettings,
-      label: 'Settings',
-      href: '/settings',
+      label: "Settings",
+      href: "/settings",
     },
   ];
 
   return (
-    <div ref={menuRef} className={cn('relative', className)}>
+    <div ref={menuRef} className={cn("relative", className)}>
       {/* Profile Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
       >
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] flex items-center justify-center text-white font-bold text-sm shadow-md">
-          {user?.name?.[0]?.toUpperCase() ||
-            user?.email?.[0]?.toUpperCase() ||
-            'U'}
-        </div>
+        {user?.imageurl ? (
+          <img
+            src={getImageUrl(user.imageurl)}
+            alt={user.name || "User"}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] flex items-center justify-center text-white font-bold text-sm shadow-md">
+            {user?.name?.[0]?.toUpperCase() ||
+              user?.email?.[0]?.toUpperCase() ||
+              "U"}
+          </div>
+        )}
         <div className=" md:block text-left">
           <p className="text-sm font-semibold text-gray-500">
-            {user?.name?.split(' ')[0] || 'User'}
+            {user?.name?.split(" ")[0] || "User"}
           </p>
           <p className="text-xs text-gray-500">
-            {user?.cityName || 'Location'}
+            {user?.cityName || "Location"}
           </p>
         </div>
       </button>
@@ -137,12 +140,22 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             {/* User Info Header */}
             <div className="p-4 bg-gradient-to-br from-[#003049] to-[#004d6d] text-white">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
-                </div>
+                {user?.imageurl ? (
+                  <img
+                    src={getImageUrl(user.imageurl)}
+                    alt={user.name || "User"}
+                    className="w-14 h-14 rounded-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                      {user?.name?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  </>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold truncate">
-                    {user?.name || 'User'}
+                    {user?.name || "User"}
                   </p>
                   <p className="text-sm text-white/80 truncate">
                     {user?.email}
@@ -188,7 +201,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                   <FiLogOut className="w-5 h-5" />
                 )}
                 <span className="font-medium">
-                  {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </span>
               </button>
             </div>

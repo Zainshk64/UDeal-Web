@@ -102,7 +102,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       <button
         onClick={handleToggle}
         className={cn(
-          'relative p-2.5 rounded-lg transition-colors',
+          'relative p-2.5 cursor-pointer rounded-lg transition-colors',
           variant === 'glass'
             ? 'hover:bg-gray-100'
             : 'hover:bg-white/10'
@@ -112,9 +112,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
         <FiBell className={cn('w-5 h-5', textColor)} />
 
         {/* Unread dot */}
-        {isAuthenticated && notifications.length > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-        )}
+        
       </button>
 
       {/* Popup Card */}

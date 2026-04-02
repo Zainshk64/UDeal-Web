@@ -1,48 +1,59 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { FiClock, FiHeart, FiMapPin, FiSearch, FiStar, FiX } from 'react-icons/fi';
-import { FaHeart } from 'react-icons/fa';
-import { toast } from 'sonner';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  FiClock,
+  FiHeart,
+  FiMapPin,
+  FiSearch,
+  FiStar,
+  FiX,
+} from "react-icons/fi";
+import { FaHeart } from "react-icons/fa";
+import { toast } from "sonner";
 
-import { Container } from '@/src/components/ui/Container';
-import { Pagination } from '@/src/components/seller/Pagination';
-import { useAuth } from '@/src/context/AuthContext';
-import { CATEGORIES, ROUTES } from '@/src/utils/constants';
-import { CategoryProduct, getCategoryProducts } from '@/src/api/services/CategoryApi';
-import { CityOption, getAllCities } from '@/src/api/services/CityApi';
-import { toggleFavorite } from '@/src/api/services/HomeApi';
-import { getImageUrl } from '@/src/utils/image';
-import { formatCurrency } from '@/src/utils/format';
-import { cn } from '@/src/utils/cn';
+import { Container } from "@/src/components/ui/Container";
+import { Pagination } from "@/src/components/seller/Pagination";
+import { useAuth } from "@/src/context/AuthContext";
+import { CATEGORIES, ROUTES } from "@/src/utils/constants";
+import {
+  CategoryProduct,
+  getCategoryProducts,
+} from "@/src/api/services/CategoryApi";
+import { CityOption, getAllCities } from "@/src/api/services/CityApi";
+import { toggleFavorite } from "@/src/api/services/HomeApi";
+import { getImageUrl } from "@/src/utils/image";
+import { formatCurrency } from "@/src/utils/format";
+import { cn } from "@/src/utils/cn";
 
 const PAGE_SIZE = 30;
 
 const HERO_COPY = [
   {
-    title: 'Find the best {category} deals near you',
+    title: "Find the best {category} deals near you",
     description:
-      'Fresh listings daily with trusted sellers, clear pricing, and faster responses.',
+      "Fresh listings daily with trusted sellers, clear pricing, and faster responses.",
   },
   {
-    title: 'Shop smarter in {category}',
+    title: "Shop smarter in {category}",
     description:
-      'Discover value picks, premium options, and trending products all in one place.',
+      "Discover value picks, premium options, and trending products all in one place.",
   },
   {
-    title: '{category} that match your style',
+    title: "{category} that match your style",
     description:
-      'Filter by city, budget, and condition to quickly find exactly what you need.',
+      "Filter by city, budget, and condition to quickly find exactly what you need.",
   },
 ];
 
 export default function CategoryPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, user } = useAuth();
   const catId = params?.id ? Number(params.id) : 0;
   const currentCategory = CATEGORIES.find((c) => c.id === catId);
@@ -51,17 +62,24 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [selectedCityId, setSelectedCityId] = useState<number | null>(user?.cityId || null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const queryCityIdRaw = searchParams.get("cityId");
+  const queryCityId = queryCityIdRaw !== null ? Number(queryCityIdRaw) : null;
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(
+    queryCityId !== null && !Number.isNaN(queryCityId)
+      ? queryCityId
+      : user?.cityId || null,
+  );
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [cities, setCities] = useState<CityOption[]>([]);
   const [favLoading, setFavLoading] = useState<number | null>(null);
   const [localFavs, setLocalFavs] = useState<Set<number>>(new Set());
 
   // Sidebar filter states (future-ready)
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [condition, setCondition] = useState<'all' | 'used' | 'new'>('all');
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [condition, setCondition] = useState<"all" | "used" | "new">("all");
   const [radiusKm, setRadiusKm] = useState(35);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -69,7 +87,13 @@ export default function CategoryPage() {
   const fetchProducts = useCallback(
     async (page: number = 1, city: number | null = selectedCityId) => {
       setLoading(true);
-      const res = await getCategoryProducts(catId, page, PAGE_SIZE, city, user?.userId || null);
+      const res = await getCategoryProducts(
+        catId,
+        page,
+        PAGE_SIZE,
+        city,
+        user?.userId || null,
+      );
       setProducts(res.products);
       setTotalCount(res.meta?.[0]?.TotalCount || 0);
 
@@ -80,7 +104,7 @@ export default function CategoryPage() {
       setLocalFavs(favSet);
       setLoading(false);
     },
-    [catId, selectedCityId, user?.userId]
+    [catId, selectedCityId, user?.userId],
   );
 
   useEffect(() => {
@@ -98,7 +122,7 @@ export default function CategoryPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     fetchProducts(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSearch = () => {
@@ -107,7 +131,9 @@ export default function CategoryPage() {
 
   const handleFavorite = async (productId: number) => {
     if (!isAuthenticated || !user?.userId) {
-      toast.info('Login Required', { description: 'Please login to add favorites' });
+      toast.info("Login Required", {
+        description: "Please login to add favorites",
+      });
       return;
     }
     setFavLoading(productId);
@@ -115,6 +141,12 @@ export default function CategoryPage() {
       const isFav = localFavs.has(productId);
       const result = await toggleFavorite(productId, user.userId);
       if (result.success) {
+        toast.success(
+          !isFav ? "Removed from Favorites" : "Added to Favorites",
+          {
+            // description: result.message,
+          },
+        );
         setLocalFavs((prev) => {
           const next = new Set(prev);
           if (isFav) next.delete(productId);
@@ -128,12 +160,12 @@ export default function CategoryPage() {
   };
 
   const heroContent = useMemo(() => {
-    const name = currentCategory?.name || 'Category';
+    const name = currentCategory?.name || "Category";
     const random = HERO_COPY[Math.floor(Math.random() * HERO_COPY.length)];
     return {
-      title: random.title.replace('{category}', name),
+      title: random.title.replace("{category}", name),
       description: random.description,
-      image: currentCategory?.banner  || '/Category/furniture.png',
+      image: currentCategory?.banner || "/Category/furniture.png",
     };
   }, [currentCategory?.name, currentCategory?.banner]);
 
@@ -141,47 +173,75 @@ export default function CategoryPage() {
     return products.filter((product) => {
       const matchesSearch = !searchQuery
         ? true
-        : product.ProdcutTitle.toLowerCase().includes(searchQuery.toLowerCase());
+        : product.ProdcutTitle.toLowerCase().includes(
+            searchQuery.toLowerCase(),
+          );
       const priceOk =
         (!minPrice || product.Price >= Number(minPrice)) &&
         (!maxPrice || product.Price <= Number(maxPrice));
       const conditionOk =
-        condition === 'all' ? true : product.Conditon?.toLowerCase() === condition;
+        condition === "all"
+          ? true
+          : product.Conditon?.toLowerCase() === condition;
       return matchesSearch && priceOk && conditionOk;
     });
   }, [products, searchQuery, minPrice, maxPrice, condition]);
+
+  const cityQuery = selectedCityId !== null ? `?cityId=${selectedCityId}` : "";
 
   return (
     <div className="">
       {/* Hero Banner */}
       <section className="relative py-24 overflow-hidden">
         <div className="absolute inset-0">
-          <Image src={heroContent.image} alt={currentCategory?.name || 'Category'} fill className="object-cover" />
+          <Image
+            src={heroContent.image}
+            alt={currentCategory?.name || "Category"}
+            fill
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-[#01263A]/85 via-[#01263A]/70 to-[#01263A]/40" />
         </div>
 
         <Container className="relative z-10 py-14 md:py-20">
           <div className="max-w-2xl text-white">
-            <p className="mb-2 text-sm font-medium text-white/80">Home / Category / {currentCategory?.name}</p>
-            <h1 className="text-3xl md:text-6xl font-bold leading-tight">{heroContent.title}</h1>
-            <p className="mt-3 text-white/85 text-sm md:text-base">{heroContent.description}</p>
+            <nav className="mb-4 flex items-center gap-2 text-sm text-white/60">
+              <Link href="/" className="hover:text-white/90 transition-colors">
+                Home
+              </Link>
+              <span className="text-white/30">/</span>
+              <span>Category</span>
+              <span className="text-white/30">/</span>
+              <span className="text-[#F97316] font-medium">
+                {currentCategory?.name}
+              </span>
+            </nav>
+
+            <h1 className="text-3xl md:text-6xl font-bold leading-tight">
+              {heroContent.title}
+            </h1>
+            <p className="mt-3 text-white/85 text-sm md:text-base">
+              {heroContent.description}
+            </p>
             {/* <p className="mt-4 text-xs md:text-sm text-white/75">{totalCount} total results available</p> */}
           </div>
         </Container>
       </section>
 
-      <Container className="mt-4">
+      <Container className="my-4">
         {/* Category chips */}
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-4 flex gap-2 justify-center overflow-x-auto pb-1">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => router.push(`${ROUTES.CATEGORY}/${cat.id}`)}
+              onClick={() =>
+                router.push(`${ROUTES.CATEGORY}/${cat.id}${cityQuery}`)
+              }
               className={cn(
-                'whitespace-nowrap cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition',
+                "whitespace-nowrap cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition",
                 cat.id === catId
-                  ? 'border-[#F97316] bg-[#F97316] text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-[#F97316] hover:text-[#F97316]'
+                  ? "border-[#F97316] bg-[#F97316] text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-[#F97316] hover:text-[#F97316]",
               )}
             >
               {cat.name}
@@ -191,19 +251,26 @@ export default function CategoryPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Sidebar Filters */}
-          <aside className="lg:col-span-3">
+          <aside
+            className={cn(
+              "lg:col-span-3",
+              isMobileFiltersOpen ? "block" : "hidden",
+              "lg:block",
+            )}
+          >
             <div className="rounded-2xl border border-gray-200 bg-white p-4 sticky top-28">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-gray-800">Filters</h3>
                 <button
                   onClick={() => {
-                    setMinPrice('');
-                    setMaxPrice('');
-                    setCondition('all');
+                    setMinPrice("");
+                    setMaxPrice("");
+                    setCondition("all");
                     setRadiusKm(35);
-                    setSearchInput('');
-                    setSearchQuery('');
+                    setSearchInput("");
+                    setSearchQuery("");
                     setSelectedCityId(null);
+                    setIsMobileFiltersOpen(false);
                   }}
                   className="text-xs text-gray-500 hover:text-[#F97316]"
                 >
@@ -213,17 +280,23 @@ export default function CategoryPage() {
 
               <div className="space-y-4">
                 <div>
-                  <p className="mb-2 text-xs font-semibold text-gray-600">Category</p>
+                  <p className="mb-2 text-xs font-semibold text-gray-600">
+                    Category
+                  </p>
                   <div className="space-y-1 max-h-52 overflow-auto pr-1">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={`side-${cat.id}`}
-                        onClick={() => router.push(`${ROUTES.CATEGORY}/${cat.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `${ROUTES.CATEGORY}/${cat.id}${cityQuery}`,
+                          )
+                        }
                         className={cn(
-                          'w-full rounded-lg px-2 py-1.5 text-left text-xs transition',
+                          "w-full rounded-lg px-2 py-1.5 text-left text-xs transition",
                           cat.id === catId
-                            ? 'bg-[#F97316]/10 text-[#F97316] font-semibold'
-                            : 'hover:bg-gray-50 text-gray-600'
+                            ? "bg-[#F97316]/10 text-[#F97316] font-semibold"
+                            : "hover:bg-gray-50 text-gray-600",
                         )}
                       >
                         {cat.name}
@@ -233,7 +306,9 @@ export default function CategoryPage() {
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-semibold text-gray-600">Price range</p>
+                  <p className="mb-2 text-xs font-semibold text-gray-600">
+                    Price range
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       value={minPrice}
@@ -268,11 +343,15 @@ export default function CategoryPage() {
                 </div> */}
 
                 <div>
-                  <p className="mb-2 text-xs font-semibold text-gray-600">City</p>
+                  <p className="mb-2 text-xs font-semibold text-gray-600">
+                    City
+                  </p>
                   <select
-                    value={selectedCityId ?? ''}
+                    value={selectedCityId ?? ""}
                     onChange={(e) => {
-                      const value = e.target.value ? Number(e.target.value) : null;
+                      const value = e.target.value
+                        ? Number(e.target.value)
+                        : null;
                       setSelectedCityId(value);
                       setCurrentPage(1);
                     }}
@@ -311,7 +390,7 @@ export default function CategoryPage() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-base font-bold text-gray-800">
-                    "{currentCategory?.name || 'Category'}"
+                    "{currentCategory?.name || "Category"}"
                   </h2>
                   <p className="text-xs text-gray-500">
                     Showing {filteredProducts.length} of {totalCount} results
@@ -319,20 +398,34 @@ export default function CategoryPage() {
                 </div>
 
                 <div className="flex w-full md:w-auto items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileFiltersOpen((v) => !v)}
+                    className="lg:hidden inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    {isMobileFiltersOpen ? (
+                      <>
+                        <FiX className="h-4 w-4" />
+                        Close
+                      </>
+                    ) : (
+                      <>Filters</>
+                    )}
+                  </button>
                   <div className="relative flex-1 md:w-72">
                     <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                       placeholder="Search in this category..."
                       className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-9 text-sm outline-none focus:border-[#F97316]"
                     />
                     {searchInput && (
                       <button
                         onClick={() => {
-                          setSearchInput('');
-                          setSearchQuery('');
+                          setSearchInput("");
+                          setSearchQuery("");
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
                       >
@@ -353,13 +446,20 @@ export default function CategoryPage() {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="h-[280px] rounded-xl bg-gray-200 animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-[280px] rounded-xl bg-gray-200 animate-pulse"
+                  />
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="rounded-2xl bg-white border border-gray-200 py-14 text-center">
-                <p className="text-xl font-bold text-gray-700">No products found</p>
-                <p className="text-sm text-gray-500 mt-1">Try changing filters or search keyword</p>
+                <p className="text-xl font-bold text-gray-700">
+                  No products found
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Try changing filters or search keyword
+                </p>
               </div>
             ) : (
               <>
@@ -378,7 +478,7 @@ export default function CategoryPage() {
                           <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
                             <div className="relative h-48 w-full bg-gray-200">
                               <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
-                                {product.ProductType === 'Featured' && (
+                                {product.ProductType === "Featured" && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
                                     <FiStar className="h-3 w-3" />
                                     Featured
@@ -392,7 +492,7 @@ export default function CategoryPage() {
                                   handleFavorite(product.ProductId);
                                 }}
                                 disabled={isFavLoading}
-                                className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-2"
+                                className="absolute right-2 cursor-pointer top-2 z-10 rounded-full bg-white/90 p-2"
                               >
                                 {isFavLoading ? (
                                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#F97316]" />
@@ -411,12 +511,12 @@ export default function CategoryPage() {
                             </div>
                             <div className="p-3">
                               <p className="text-xl font-bold text-[#F97316]">
-                                {formatCurrency(product.Price, 'PKR')}
+                                {formatCurrency(product.Price, "PKR")}
                               </p>
                               <h3 className="line-clamp-1 text-lg font-semibold text-gray-800">
                                 {product.ProdcutTitle}
                               </h3>
-                              <h3 className="line-clamp-1 mb-3 text-md font-medium text-gray-500">
+                              <h3 className="line-clamp-1 mb-3 text-sm mb-3 text-gray-500">
                                 {product.ProductDescription}
                               </h3>
                               {/* <p className="mt-1 text-xs text-gray-500">
@@ -440,7 +540,11 @@ export default function CategoryPage() {
                   })}
                 </div>
 
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
               </>
             )}
           </section>
