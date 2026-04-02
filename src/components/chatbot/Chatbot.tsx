@@ -122,10 +122,10 @@ export const Chatbot: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-15 left-6 p-4 gradient-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
+        className="fixed bottom-23 right-8 p-4 gradient-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
         title="Chat with UDealZone Assistant"
       >
-        {isOpen ? <FiX className="w-6 h-6" /> : <FiMessageCircle className="w-6 h-6" />}
+        {isOpen ? <FiX className="w-7 h-7" /> : <FiMessageCircle className="w-7 h-7" />}
       </motion.button>
 
       {/* Chatbot Modal */}
@@ -136,7 +136,7 @@ export const Chatbot: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            className="fixed bottom-30 left-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-100 border border-gray-200"
+            className="fixed bottom-35 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-100 border border-gray-200"
           >
             {/* Header */}
             <div className="gradient-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
