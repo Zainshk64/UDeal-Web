@@ -97,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         ROUTES.MY_ADS,
         ROUTES.ADD_POST,
         "/settings",
-        "/favorites",
+        ROUTES.FAVORITES,
       ];
       const isProtected = protectedRoutes.some((route) =>
         pathname.startsWith(route),
@@ -252,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isAuthenticated ? (
                 <>
                   <button
-                    onClick={() => router.push("/favorites")}
+                    onClick={() => router.push(ROUTES.FAVORITES)}
                     className={cn(
                       "p-2.5 rounded-lg transition-colors",
                       variant === "glass"
@@ -309,7 +309,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile: Favorite Icon (only when logged in) */}
             {isAuthenticated && (
               <button
-                onClick={() => router.push("/favorites")}
+                onClick={() => router.push(ROUTES.FAVORITES)}
                 className={cn(
                   "lg:hidden p-2.5 rounded-lg transition-colors",
                   variant === "glass"
@@ -442,7 +442,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         My Ads
                       </Link>
                       <Link
-                        href="/favorites"
+                        href={ROUTES.FAVORITES}
                         onClick={() => setIsMenuOpen(false)}
                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
                       >

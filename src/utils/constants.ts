@@ -112,6 +112,7 @@ export const ROUTES = {
   PRODUCT_DETAIL: '/product',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  FAVORITES: '/favorites',
 } as const;
 
 // ============================================

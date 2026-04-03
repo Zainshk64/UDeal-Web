@@ -34,7 +34,7 @@ export default function Home() {
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <HomePage />
       <CTASection />
-      <Chatbot />
+      {/* <Chatbot /> */}
     </>
   );
 }

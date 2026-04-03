@@ -54,7 +54,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
         ROUTES.MY_ADS,
         ROUTES.ADD_POST,
         "/settings",
-        "/favorites",
+        ROUTES.FAVORITES,
       ];
       const isProtected = protectedRoutes.some((route) =>
         pathname.startsWith(route),
@@ -88,7 +88,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
     {
       icon: FiHeart,
       label: "Favorites",
-      href: "/favorites",
+      href: ROUTES.FAVORITES,
     },
     {
       icon: FiSettings,

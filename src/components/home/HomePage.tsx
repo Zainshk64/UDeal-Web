@@ -324,22 +324,7 @@ export const HomePage: React.FC = () => {
         </section>
       </main>
 
-      {/* Scroll to Top Button */}
-      {showScrollTop && (
-        <motion.button
-          onClick={scrollToTop}
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="fixed bottom-8 right-8 p-4 bg-[#F97316] text-white rounded-full shadow-2xl hover:shadow-xl transition-shadow z-40"
-        >
-          <FiArrowUp className="w-6 h-6" />
-        </motion.button>
-      )}
-
-      {/* Footer */}
+   
       {/* <Footer /> */}
     </div>
   );
