@@ -3,10 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FiUser, FiPhone, FiFlag, FiChevronRight } from "react-icons/fi";
 import { ProductDetail, ProductMetaData } from "@/src/api/services/HomeApi";
 import { getImageUrl } from "@/src/utils/image";
 import { useAuth } from "@/src/context/AuthContext";
+import { createConversation } from "@/src/api/services/chatSystemApi";
+import { ROUTES } from "@/src/utils/constants";
 import { toast } from "sonner";
 
 interface SellerCardProps {
@@ -23,7 +26,8 @@ export const SellerCard: React.FC<SellerCardProps> = ({
   detail,
   onReport,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
 
   if (!metaData?.Uid) return null;
 
@@ -43,16 +47,25 @@ export const SellerCard: React.FC<SellerCardProps> = ({
     }
   };
 
-  const handleChatClick = () => {
+  const handleChatClick = async () => {
     if (!isAuthenticated) {
       toast.info("Login Required", {
         description: "Please login to chat with the seller",
       });
+      router.push(ROUTES.LOGIN);
       return;
     }
-    toast.info("Coming Soon", {
-      description: "Chat feature will be available soon",
-    });
+    const uid = user?.userId;
+    if (!uid) return;
+    toast.info("Starting chat…", { duration: 1500 });
+    const conversationId = await createConversation(detail.ProductId, uid);
+    if (!conversationId || typeof conversationId !== "string") {
+      toast.error("Chat Error", {
+        description: "Failed to create conversation",
+      });
+      return;
+    }
+    router.push(`${ROUTES.CHAT}?c=${encodeURIComponent(conversationId)}`);
   };
 
   const handleReportClick = () => {

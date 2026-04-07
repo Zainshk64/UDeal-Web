@@ -18,8 +18,11 @@ import {
   FiPackage,
   FiSettings,
   FiLogOut,
+  FiShoppingBag,
+  FiMessageCircle,
 } from "react-icons/fi";
 import { useAuth } from "@/src/context/AuthContext";
+import { useChat } from "@/src/context/ChatContext";
 import { logout } from "@/src/api/services/AuthApi";
 import { ROUTES, CATEGORIES } from "@/src/utils/constants";
 import { ProfileMenu } from "./ProfileMenu";
@@ -45,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user, refreshAuth } = useAuth();
+  const { unreadTotal } = useChat();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
@@ -98,6 +102,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         ROUTES.ADD_POST,
         "/settings",
         ROUTES.FAVORITES,
+        ROUTES.BUYERS_POST,
+        ROUTES.BUYERS_MY_REQUESTS,
+        ROUTES.CHAT,
       ];
       const isProtected = protectedRoutes.some((route) =>
         pathname.startsWith(route),
@@ -264,6 +271,37 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <FiHeart className={cn("w-5 h-5", textColorClass)} />
                   </button>
 
+                  <button
+                    onClick={() => router.push(ROUTES.BUYERS)}
+                    className={cn(
+                      "p-2.5 rounded-lg transition-colors",
+                      variant === "glass"
+                        ? "hover:bg-gray-100"
+                        : "hover:bg-white/10",
+                    )}
+                    title="Buyer requests"
+                  >
+                    <FiShoppingBag className={cn("w-5 h-5", textColorClass)} />
+                  </button>
+
+                  <button
+                    onClick={() => router.push(ROUTES.CHAT)}
+                    className={cn(
+                      "relative p-2.5 rounded-lg transition-colors",
+                      variant === "glass"
+                        ? "hover:bg-gray-100"
+                        : "hover:bg-white/10",
+                    )}
+                    title="Messages"
+                  >
+                    <FiMessageCircle className={cn("w-5 h-5", textColorClass)} />
+                    {unreadTotal > 0 && (
+                      <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F97316] px-0.5 text-[10px] font-bold text-white">
+                        {unreadTotal > 99 ? "99+" : unreadTotal}
+                      </span>
+                    )}
+                  </button>
+
                   <NotificationPopup variant={variant} />
 
                   <Button
@@ -308,18 +346,49 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Mobile: Favorite Icon (only when logged in) */}
             {isAuthenticated && (
-              <button
-                onClick={() => router.push(ROUTES.FAVORITES)}
-                className={cn(
-                  "lg:hidden p-2.5 rounded-lg transition-colors",
-                  variant === "glass"
-                    ? "hover:bg-gray-100"
-                    : "hover:bg-white/10",
-                )}
-                title="Favorites"
-              >
-                <FiHeart className={cn("w-5 h-5", textColorClass)} />
-              </button>
+              <>
+                <button
+                  onClick={() => router.push(ROUTES.FAVORITES)}
+                  className={cn(
+                    "lg:hidden p-2.5 rounded-lg transition-colors",
+                    variant === "glass"
+                      ? "hover:bg-gray-100"
+                      : "hover:bg-white/10",
+                  )}
+                  title="Favorites"
+                >
+                  <FiHeart className={cn("w-5 h-5", textColorClass)} />
+                </button>
+                <button
+                  onClick={() => router.push(ROUTES.BUYERS)}
+                  className={cn(
+                    "lg:hidden p-2.5 rounded-lg transition-colors",
+                    variant === "glass"
+                      ? "hover:bg-gray-100"
+                      : "hover:bg-white/10",
+                  )}
+                  title="Buyer requests"
+                >
+                  <FiShoppingBag className={cn("w-5 h-5", textColorClass)} />
+                </button>
+                <button
+                  onClick={() => router.push(ROUTES.CHAT)}
+                  className={cn(
+                    "relative lg:hidden p-2.5 rounded-lg transition-colors",
+                    variant === "glass"
+                      ? "hover:bg-gray-100"
+                      : "hover:bg-white/10",
+                  )}
+                  title="Messages"
+                >
+                  <FiMessageCircle className={cn("w-5 h-5", textColorClass)} />
+                  {unreadTotal > 0 && (
+                    <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F97316] px-0.5 text-[10px] font-bold text-white">
+                      {unreadTotal > 99 ? "99+" : unreadTotal}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
 
             {/* Mobile Menu Button */}
@@ -448,6 +517,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <FiHeart className="w-5 h-5 text-gray-500 shrink-0" />
                         Favorites
+                      </Link>
+                      <Link
+                        href={ROUTES.BUYERS}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                      >
+                        <FiShoppingBag className="w-5 h-5 text-gray-500 shrink-0" />
+                        Buyer requests
+                      </Link>
+                      <Link
+                        href={ROUTES.BUYERS_MY_REQUESTS}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                      >
+                        <FiShoppingBag className="w-5 h-5 text-gray-500 shrink-0" />
+                        My buyer requests
+                      </Link>
+                      <Link
+                        href={ROUTES.CHAT}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                      >
+                        <FiMessageCircle className="w-5 h-5 text-gray-500 shrink-0" />
+                        Messages
+                        {unreadTotal > 0 && (
+                          <span className="ml-auto rounded-full bg-[#F97316] px-2 py-0.5 text-xs font-bold text-white">
+                            {unreadTotal > 99 ? "99+" : unreadTotal}
+                          </span>
+                        )}
                       </Link>
                       <Link
                         href="/settings"

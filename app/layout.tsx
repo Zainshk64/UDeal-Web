@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/src/context/AuthContext';
+import { ChatProvider } from '@/src/context/ChatContext';
 import './globals.css';
 import SiteChrome from '@/src/components/layout/SiteChrome';
 
@@ -48,7 +49,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased bg-white">
         <AuthProvider>
-          <SiteChrome>{children}</SiteChrome>
+          <ChatProvider>
+            <SiteChrome>{children}</SiteChrome>
+          </ChatProvider>
           <Toaster
             position="top-right"
             expand={false}

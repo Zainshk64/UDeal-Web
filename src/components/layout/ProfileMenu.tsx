@@ -9,6 +9,7 @@ import {
   FiSettings,
   FiLogOut,
   FiPackage,
+  FiShoppingBag,
 } from "react-icons/fi";
 import { useAuth } from "@/src/context/AuthContext";
 import { logout } from "@/src/api/services/AuthApi";
@@ -55,6 +56,8 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
         ROUTES.ADD_POST,
         "/settings",
         ROUTES.FAVORITES,
+        ROUTES.BUYERS_POST,
+        ROUTES.BUYERS_MY_REQUESTS,
       ];
       const isProtected = protectedRoutes.some((route) =>
         pathname.startsWith(route),
@@ -89,6 +92,16 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
       icon: FiHeart,
       label: "Favorites",
       href: ROUTES.FAVORITES,
+    },
+    {
+      icon: FiShoppingBag,
+      label: "Buyer requests",
+      href: ROUTES.BUYERS,
+    },
+    {
+      icon: FiShoppingBag,
+      label: "My buyer requests",
+      href: ROUTES.BUYERS_MY_REQUESTS,
     },
     {
       icon: FiSettings,

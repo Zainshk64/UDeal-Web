@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { FiGrid, FiPackage } from "react-icons/fi";
 import { Button } from "../ui/Button";
 import { Container } from "../ui/Container";
+import { ROUTES } from "@/src/utils/constants";
 
 export const HeroSection: React.FC = () => {
   return (
@@ -58,19 +60,13 @@ export const HeroSection: React.FC = () => {
             >
               Browse Categories
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              icon={<FiPackage className="w-5 h-5" />}
-              className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white hover:text-[#003049]"
-              onClick={() => {
-                document
-                  .getElementById("products")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }}
+            <Link
+              href={ROUTES.BUYERS}
+              className="inline-flex cursor-pointer items-center justify-center gap-3 rounded-lg border-2 border-white/30 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-[#003049]"
             >
-              Explore Products
-            </Button>
+              <FiPackage className="h-5 w-5" />
+              Explore Buyers
+            </Link>
           </div>
         </motion.div>
       </Container>

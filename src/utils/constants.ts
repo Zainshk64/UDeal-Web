@@ -113,6 +113,10 @@ export const ROUTES = {
   PROFILE: '/profile',
   SETTINGS: '/settings',
   FAVORITES: '/favorites',
+  BUYERS: '/buyers',
+  BUYERS_POST: '/buyers/post',
+  BUYERS_MY_REQUESTS: '/buyers/my-requests',
+  CHAT: '/chat',
 } as const;
 
 // ============================================
@@ -236,7 +240,7 @@ export const FEATURES = {
   LOCATION_BASED: true,
   CHATBOT: true,
   FEATURED_ADS: true,
-  MESSAGING: false,
+  MESSAGING: true,
 } as const;
 
 // ============================================

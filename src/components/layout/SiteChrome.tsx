@@ -23,7 +23,9 @@ export default function SiteChrome({
     pathname.startsWith('/my-ads') ||
     pathname.startsWith('/product') ||
     pathname.startsWith('/favorites') ||
-    pathname.startsWith('/seller');
+    pathname.startsWith('/buyers') ||
+    pathname.startsWith('/seller') ||
+    pathname.startsWith('/chat');
 
   if (isAuthRoute) {
     return <>{children}</>;
