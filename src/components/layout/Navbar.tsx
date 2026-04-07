@@ -22,7 +22,7 @@ import {
   FiMessageCircle,
 } from "react-icons/fi";
 import { useAuth } from "@/src/context/AuthContext";
-import { useChat } from "@/src/context/ChatContext";
+import { useChatStore } from "@/src/stores/chatStore";
 import { logout } from "@/src/api/services/AuthApi";
 import { ROUTES, CATEGORIES } from "@/src/utils/constants";
 import { ProfileMenu } from "./ProfileMenu";
@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user, refreshAuth } = useAuth();
-  const { unreadTotal } = useChat();
+  const unreadTotal = useChatStore((s) => s.unreadTotal);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);

@@ -19,7 +19,7 @@ export default function ChatPage() {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 pt-24">
+      <div className="flex min-h-screen items-center justify-center bg-[#111b21]">
         <div className="h-12 w-12 animate-spin rounded-full border-2 border-[#003049] border-t-transparent" />
       </div>
     );

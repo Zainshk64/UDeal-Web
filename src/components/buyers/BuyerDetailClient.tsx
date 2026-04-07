@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { FiArrowLeft, FiMessageCircle, FiPhone, FiEdit3 } from 'react-icons/fi';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ import { createBuyerConversation } from '@/src/api/services/chatSystemApi';
 export default function BuyerDetailClient() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
   const id = params?.id ? Number(params.id) : 0;
 
@@ -51,7 +52,15 @@ export default function BuyerDetailClient() {
       });
       return;
     }
-    router.push(`${ROUTES.CHAT}?c=${encodeURIComponent(conversationId)}`);
+    const qs = new URLSearchParams({
+      c: conversationId,
+      back: pathname || `${ROUTES.BUYERS}/${detail.ProductReqId}`,
+      type: 'buyer',
+      peerName: detail.BuyerName || 'Buyer',
+      productTitle: detail.RequiredTitle || 'Buyer request',
+      viewUrl: `${ROUTES.BUYERS}/${detail.ProductReqId}`,
+    });
+    router.push(`${ROUTES.CHAT}?${qs.toString()}`);
   };
 
   const handleCall = () => {

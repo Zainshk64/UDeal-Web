@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FiUser, FiPhone, FiFlag, FiChevronRight } from "react-icons/fi";
 import { ProductDetail, ProductMetaData } from "@/src/api/services/HomeApi";
 import { getImageUrl } from "@/src/utils/image";
@@ -27,6 +27,7 @@ export const SellerCard: React.FC<SellerCardProps> = ({
   onReport,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
 
   if (!metaData?.Uid) return null;
@@ -65,7 +66,17 @@ export const SellerCard: React.FC<SellerCardProps> = ({
       });
       return;
     }
-    router.push(`${ROUTES.CHAT}?c=${encodeURIComponent(conversationId)}`);
+    const params = new URLSearchParams({
+      c: conversationId,
+      back: pathname || `${ROUTES.PRODUCT_DETAIL}/${detail.ProductId}`,
+      type: "product",
+      peerName: metaData.Name || "Seller",
+      peerImage: metaData.PicPath || "",
+      productTitle: detail.ProdcutTitle || "Listing",
+      productImage: "",
+      viewUrl: `${ROUTES.PRODUCT_DETAIL}/${detail.ProductId}`,
+    });
+    router.push(`${ROUTES.CHAT}?${params.toString()}`);
   };
 
   const handleReportClick = () => {

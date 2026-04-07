@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 import type { ChatMessage, Conversation } from '@/src/api/services/chatSystemApi';
 
-export type ChatFilter = 'all' | 'product' | 'buyer';
+export type ChatFilter = 'product' | 'buyer';
 
 function sortMessages(a: ChatMessage, b: ChatMessage): number {
   return new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime();
 }
 
-function totalUnread(list: Conversation[]): number {
-  return list.reduce((s, c) => s + (c.unseenCount > 0 ? c.unseenCount : 0), 0);
+export function totalUnread(list: Conversation[], activeId: string | null): number {
+  return list.reduce((s, c) => {
+    if (activeId && c.id === activeId) return s;
+    return s + (c.unseenCount > 0 ? c.unseenCount : 0);
+  }, 0);
 }
 
 interface ChatStoreState {
@@ -24,9 +27,19 @@ interface ChatStoreState {
   setFilter: (f: ChatFilter) => void;
   setConversations: (list: Conversation[]) => void;
   setActiveConversationId: (id: string | null) => void;
-  setMessagesForConversation: (cid: string, items: ChatMessage[], hasMore: boolean, cursor: string | null) => void;
-  prependOlderMessages: (cid: string, older: ChatMessage[], hasMore: boolean, cursor: string | null) => void;
-  upsertMessage: (cid: string, msg: ChatMessage) => void;
+  setMessagesForConversation: (
+    cid: string,
+    items: ChatMessage[],
+    hasMore: boolean,
+    cursor: string | null,
+  ) => void;
+  prependOlderMessages: (
+    cid: string,
+    older: ChatMessage[],
+    hasMore: boolean,
+    cursor: string | null,
+  ) => void;
+  upsertMessage: (cid: string, msg: ChatMessage, myUserId?: number) => void;
   patchMessage: (cid: string, messageId: string, patch: Partial<ChatMessage>) => void;
   removeMessage: (cid: string, messageId: string) => void;
   removeConversation: (cid: string) => void;
@@ -41,7 +54,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   messageCursor: {},
   messageHasMore: {},
   activeConversationId: null,
-  filter: 'all',
+  filter: 'product',
   typingByConversation: {},
   unreadTotal: 0,
 
@@ -50,10 +63,14 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   setConversations: (list) =>
     set({
       conversations: list,
-      unreadTotal: totalUnread(list),
+      unreadTotal: totalUnread(list, get().activeConversationId),
     }),
 
-  setActiveConversationId: (id) => set({ activeConversationId: id }),
+  setActiveConversationId: (id) =>
+    set((s) => ({
+      activeConversationId: id,
+      unreadTotal: totalUnread(s.conversations, id),
+    })),
 
   setMessagesForConversation: (cid, items, hasMore, cursor) =>
     set((s) => {
@@ -79,10 +96,11 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       };
     }),
 
-  upsertMessage: (cid, msg) =>
+  upsertMessage: (cid, msg, myUserId) =>
     set((s) => {
       const list = s.messagesByConversation[cid] || [];
       const idx = list.findIndex((m) => m.id === msg.id);
+      const isNew = idx < 0;
       let next: ChatMessage[];
       if (idx >= 0) {
         next = [...list];
@@ -90,19 +108,29 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       } else {
         next = [...list, msg].sort(sortMessages);
       }
-      const convs = s.conversations.map((c) =>
-        c.id === cid
-          ? {
-              ...c,
-              lastMessageText: msg.text,
-              lastMessageAt: msg.sentAt,
-            }
-          : c,
-      );
+
+      const incoming =
+        myUserId != null && myUserId > 0 && msg.senderId !== myUserId && isNew;
+      const viewing = s.activeConversationId === cid;
+
+      const convs = s.conversations.map((c) => {
+        if (c.id !== cid) return c;
+        let unseen = c.unseenCount ?? 0;
+        if (incoming) {
+          unseen = viewing ? 0 : unseen + 1;
+        }
+        return {
+          ...c,
+          lastMessageText: msg.text,
+          lastMessageAt: msg.sentAt,
+          unseenCount: unseen,
+        };
+      });
+
       return {
         messagesByConversation: { ...s.messagesByConversation, [cid]: next },
         conversations: convs,
-        unreadTotal: totalUnread(convs),
+        unreadTotal: totalUnread(convs, s.activeConversationId),
       };
     }),
 
@@ -133,14 +161,15 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       const { [cid]: _c, ...restCursor } = s.messageCursor;
       const { [cid]: _h, ...restHas } = s.messageHasMore;
       const { [cid]: _t, ...restTyping } = s.typingByConversation;
+      const nextActive = s.activeConversationId === cid ? null : s.activeConversationId;
       return {
         conversations: convs,
         messagesByConversation: restMsg,
         messageCursor: restCursor,
         messageHasMore: restHas,
         typingByConversation: restTyping,
-        activeConversationId: s.activeConversationId === cid ? null : s.activeConversationId,
-        unreadTotal: totalUnread(convs),
+        activeConversationId: nextActive,
+        unreadTotal: totalUnread(convs, nextActive),
       };
     }),
 
@@ -149,7 +178,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       const convs = s.conversations.map((c) => (c.id === cid ? { ...c, ...patch } : c));
       return {
         conversations: convs,
-        unreadTotal: totalUnread(convs),
+        unreadTotal: totalUnread(convs, s.activeConversationId),
       };
     }),
 
@@ -163,8 +192,6 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     set((s) => ({
       typingByConversation: on
         ? { ...s.typingByConversation, [cid]: true }
-        : Object.fromEntries(
-            Object.entries(s.typingByConversation).filter(([k]) => k !== cid),
-          ),
-    }),)
+        : Object.fromEntries(Object.entries(s.typingByConversation).filter(([k]) => k !== cid)),
+    })),
 }));

@@ -171,10 +171,11 @@ export const markMessagesAsSeen = async (
 
 export const deleteMessage = async (
   messageId: string,
+  userId: number,
 ): Promise<{ returnCode: boolean; returnText: string }> => {
   try {
     const response = await apiClient.delete('/chat/messages/DeleteMessage', {
-      params: { Id: messageId },
+  params: { Id: messageId, userId },
     });
     return response.data as { returnCode: boolean; returnText: string };
   } catch (error: unknown) {
