@@ -25,6 +25,8 @@ import {
   FiX,
 } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+
 type PaymentState =
   | 'idle'
   | 'generating_token'

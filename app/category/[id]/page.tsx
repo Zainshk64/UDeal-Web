@@ -31,6 +31,7 @@ import { formatCurrency } from "@/src/utils/format";
 import { cn } from "@/src/utils/cn";
 
 const PAGE_SIZE = 30;
+export const dynamic = 'force-dynamic';
 
 const HERO_COPY = [
   {

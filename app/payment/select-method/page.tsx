@@ -16,6 +16,8 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+
 export default function SelectPaymentMethodPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -30,6 +30,8 @@ import { useProductSession } from "@/hooks/useProductSession";
 import { cn } from "@/src/utils/cn";
 import { ImageViewer } from "@/src/components/product/ImagePreview";
 
+export const dynamic = 'force-dynamic';
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();

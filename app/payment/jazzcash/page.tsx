@@ -17,6 +17,8 @@ import {
   FiCreditCard,
 } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+
 export default function JazzCashPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

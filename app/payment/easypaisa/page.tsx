@@ -16,6 +16,8 @@ import {
   FiLoader,
 } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+
 export default function EasyPaisaPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
