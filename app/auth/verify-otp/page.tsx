@@ -1,9 +1,9 @@
-'use client'
+import { Suspense } from 'react';
+import VerifyOtpClient from './VerfiyOtpClient';
 
-import { Suspense } from "react";
-import VerifyOtpClient from "./VerfiyOtpClient";
+export const dynamic = 'force-dynamic';
 
-export default function Page() {
+export default function VerifyOtpPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-white" />}>
       <VerifyOtpClient />

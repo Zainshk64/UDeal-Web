@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: 'Your saved listings on UDealZone.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function FavoritesPage() {
   return <FavoritesClient />;
 }

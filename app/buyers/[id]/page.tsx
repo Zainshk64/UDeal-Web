@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: 'Buyer request details on UDealZone.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function BuyerDetailPage() {
   return <BuyerDetailClient />;
 }

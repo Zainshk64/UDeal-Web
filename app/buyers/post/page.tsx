@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: 'Post what you want to buy on UDealZone.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function BuyerPostPage() {
   return (
     <Suspense
