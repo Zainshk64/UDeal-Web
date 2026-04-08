@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/src/context/AuthContext';
 import { ChatProvider } from '@/src/context/ChatContext';
+import { ReactQueryProvider } from '@/src/providers/ReactQueryProvider';
 import './globals.css';
 import SiteChrome from '@/src/components/layout/SiteChrome';
 
@@ -48,10 +49,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased bg-white">
-        <AuthProvider>
-          <ChatProvider>
-            <SiteChrome>{children}</SiteChrome>
-          </ChatProvider>
+        <ReactQueryProvider>
+          <AuthProvider>
+            <ChatProvider>
+              <SiteChrome>{children}</SiteChrome>
+            </ChatProvider>
+          </AuthProvider>
           <Toaster
             position="top-right"
             expand={false}
@@ -84,7 +87,7 @@ export default function RootLayout({
               },
             }}
           />
-        </AuthProvider>
+        </ReactQueryProvider>
         <Analytics />
       </body>
     </html>

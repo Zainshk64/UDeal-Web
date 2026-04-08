@@ -20,6 +20,7 @@ import {
   FiLogOut,
   FiShoppingBag,
   FiMessageCircle,
+  FiMapPin,
 } from "react-icons/fi";
 import { useAuth } from "@/src/context/AuthContext";
 import { useChatStore } from "@/src/stores/chatStore";
@@ -232,13 +233,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 variant="compact"
                 className="flex-1"
                 placeholder="Search products..."
+                onSearch={(q) => {
+                  const clean = q.trim();
+                  if (!clean) return;
+                  router.push(
+                    `/search?q=${encodeURIComponent(clean)}`,
+                  );
+                }}
               />
+            )}
+            {showSearch && (
+              <button
+                onClick={() => router.push(ROUTES.SEARCH_LOCATION)}
+                className={cn(
+                  "shrink-0 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-colors",
+                  variant === "glass"
+                    ? "border-gray-200 bg-white/80 text-gray-700 hover:border-[#F97316] hover:text-[#F97316]"
+                    : "border-white/20 bg-white/10 text-white hover:bg-white/20",
+                )}
+                title="Search by location"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <FiMapPin className="h-4 w-4" />
+                  Location
+                </span>
+              </button>
             )}
           </div>
 
           {/* ===== RIGHT: Actions ===== */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile Search Icon */}
             {showSearch && (
               <button
                 onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
@@ -294,7 +318,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     )}
                     title="Messages"
                   >
-                    <FiMessageCircle className={cn("w-5 h-5", textColorClass)} />
+                    <FiMessageCircle
+                      className={cn("w-5 h-5", textColorClass)}
+                    />
                     {unreadTotal > 0 && (
                       <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F97316] px-0.5 text-[10px] font-bold text-white">
                         {unreadTotal > 99 ? "99+" : unreadTotal}
@@ -422,6 +448,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   variant="compact"
                   className="flex-1"
                   placeholder="Search products..."
+                  onSearch={(q) => {
+                    const clean = q.trim();
+                    if (!clean) return;
+                    setIsMobileSearchOpen(false);
+                    router.push(
+                      `${ROUTES.SEARCH}?q=${encodeURIComponent(clean)}`,
+                    );
+                  }}
                 />
                 <button
                   onClick={() => setIsMobileSearchOpen(false)}
@@ -430,6 +464,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <FiX className="w-5 h-5" />
                 </button>
               </div>
+              <button
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  router.push(ROUTES.SEARCH_LOCATION);
+                }}
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-semibold text-gray-700 hover:border-[#F97316] hover:text-[#F97316]"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <FiMapPin className="h-4 w-4" />
+                  Search by Location
+                </span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
