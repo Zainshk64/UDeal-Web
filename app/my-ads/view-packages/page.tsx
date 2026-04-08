@@ -157,10 +157,10 @@ export default function ViewPackagesPage() {
                 </div>
                 <div className="col-span-2 text-right">
                   <button
-                    onClick={() => router.push('/my-ads/my-packages')}
+                    onClick={() => router.push('/payment/select-method?planId=' + plan.adPlanId)}
                     className="cursor-pointer rounded-lg bg-[#F97316] px-3 py-2 text-xs font-semibold text-white hover:bg-[#ea580c]"
                   >
-                    Buy / Use
+                    Buy 
                   </button>
                 </div>
               </div>
