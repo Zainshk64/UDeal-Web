@@ -298,7 +298,7 @@ export const HomePage: React.FC = () => {
                       </div>
 
                       {/* Right Shadow Indicator (mobile only) */}
-                      <div className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent" />
+                      {/* <div className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent" /> */}
                       </div>
 
                     </motion.div>
