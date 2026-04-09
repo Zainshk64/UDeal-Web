@@ -29,6 +29,13 @@ import { toggleFavorite } from "@/src/api/services/HomeApi";
 import { getImageUrl } from "@/src/utils/image";
 import { formatCurrency } from "@/src/utils/format";
 import { cn } from "@/src/utils/cn";
+import AppAdBanner from "@/src/components/ads/AppAdBanner";
+import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
+import { usePageAds } from "@/src/hooks/usePageAds";
+import {
+  categoryIdToAdPageKey,
+  type AdPageKey,
+} from "@/src/api/services/AppAdsApi";
 
 const PAGE_SIZE = 30;
 
@@ -57,6 +64,9 @@ export default function CategoryPageClient() {
   const { isAuthenticated, user } = useAuth();
   const catId = params?.id ? Number(params.id) : 0;
   const currentCategory = CATEGORIES.find((c) => c.id === catId);
+  const pageKey: AdPageKey =
+    categoryIdToAdPageKey(catId) ?? "All Listings Page";
+  const { ads } = usePageAds(pageKey);
 
   const [products, setProducts] = useState<CategoryProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,6 +201,8 @@ export default function CategoryPageClient() {
 
   return (
     <div className="">
+     
+
       {/* Hero Banner */}
       <section className="relative py-24 overflow-hidden">
         <div className="absolute inset-0">
@@ -227,6 +239,9 @@ export default function CategoryPageClient() {
           </div>
         </Container>
       </section>
+      <Container className="mt-4">
+        <AppAdBanner ad={ads.top} className="mb-4" />
+      </Container>
 
       <Container className="my-4">
         {/* Category chips */}
@@ -381,6 +396,13 @@ export default function CategoryPageClient() {
                   />
                 </div> */}
               </div>
+
+              <GoogleAdSlot
+                slot="category"
+                className="mt-6"
+                format="rectangle"
+                responsive={false}
+              />
             </div>
           </aside>
 
@@ -468,74 +490,77 @@ export default function CategoryPageClient() {
                     const isFav = localFavs.has(product.ProductId);
                     const isFavLoading = favLoading === product.ProductId;
                     return (
-                      <motion.div
-                        key={product.ProductId}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.02 }}
-                      >
-                        <Link href={`/product/${product.ProductId}`}>
-                          <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-                            <div className="relative h-48 w-full bg-gray-200">
-                              <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
-                                {product.ProductType === "Featured" && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                                    <FiStar className="h-3 w-3" />
-                                    Featured
+                      <React.Fragment key={product.ProductId}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.02 }}
+                        >
+                          <Link href={`/product/${product.ProductId}`}>
+                            <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+                              <div className="relative h-48 w-full bg-gray-200">
+                                <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+                                  {product.ProductType === "Featured" && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                                      <FiStar className="h-3 w-3" />
+                                      Featured
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleFavorite(product.ProductId);
+                                  }}
+                                  disabled={isFavLoading}
+                                  className="absolute right-2 cursor-pointer top-2 z-10 rounded-full bg-white/90 p-2"
+                                >
+                                  {isFavLoading ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#F97316]" />
+                                  ) : isFav ? (
+                                    <FaHeart className="h-4 w-4 text-[#F97316]" />
+                                  ) : (
+                                    <FiHeart className="h-4 w-4 text-gray-500" />
+                                  )}
+                                </button>
+                                <Image
+                                  src={getImageUrl(product.MainPicPath)}
+                                  alt={product.ProdcutTitle}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="p-3">
+                                <p className="text-xl font-bold text-[#F97316]">
+                                  {formatCurrency(product.Price, "PKR")}
+                                </p>
+                                <h3 className="line-clamp-1 text-lg font-semibold text-gray-800">
+                                  {product.ProdcutTitle}
+                                </h3>
+                                <h3 className="line-clamp-1 mb-3 text-sm mb-3 text-gray-500">
+                                  {product.ProductDescription}
+                                </h3>
+                                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                                  <span className="inline-flex items-center gap-1">
+                                    <FiMapPin className="h-3.5 w-3.5" />
+                                    {product.Address}
                                   </span>
-                                )}
+                                  <span className="inline-flex items-center gap-1">
+                                    <FiClock className="h-3.5 w-3.5" />
+                                    {product.TimeAgo}
+                                  </span>
+                                </div>
                               </div>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleFavorite(product.ProductId);
-                                }}
-                                disabled={isFavLoading}
-                                className="absolute right-2 cursor-pointer top-2 z-10 rounded-full bg-white/90 p-2"
-                              >
-                                {isFavLoading ? (
-                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#F97316]" />
-                                ) : isFav ? (
-                                  <FaHeart className="h-4 w-4 text-[#F97316]" />
-                                ) : (
-                                  <FiHeart className="h-4 w-4 text-gray-500" />
-                                )}
-                              </button>
-                              <Image
-                                src={getImageUrl(product.MainPicPath)}
-                                alt={product.ProdcutTitle}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div className="p-3">
-                              <p className="text-xl font-bold text-[#F97316]">
-                                {formatCurrency(product.Price, "PKR")}
-                              </p>
-                              <h3 className="line-clamp-1 text-lg font-semibold text-gray-800">
-                                {product.ProdcutTitle}
-                              </h3>
-                              <h3 className="line-clamp-1 mb-3 text-sm mb-3 text-gray-500">
-                                {product.ProductDescription}
-                              </h3>
-                              {/* <p className="mt-1 text-xs text-gray-500">
-                                {product.Year || '-'} - {product.Conditon || 'Used'}
-                              </p> */}
-                              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                                <span className="inline-flex items-center gap-1">
-                                  <FiMapPin className="h-3.5 w-3.5" />
-                                  {product.Address}
-                                </span>
-                                <span className="inline-flex items-center gap-1">
-                                  <FiClock className="h-3.5 w-3.5" />
-                                  {product.TimeAgo}
-                                </span>
-                              </div>
-                            </div>
-                          </article>
-                        </Link>
-                      </motion.div>
+                            </article>
+                          </Link>
+                        </motion.div>
+                        {(idx + 1) % 9 === 0 && ads.center ? (
+                          <div className="sm:col-span-2 xl:col-span-3">
+                            <AppAdBanner ad={ads.center} />
+                          </div>
+                        ) : null}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -549,6 +574,9 @@ export default function CategoryPageClient() {
             )}
           </section>
         </div>
+      </Container>
+      <Container className="pb-8">
+        <AppAdBanner ad={ads.bottom} />
       </Container>
     </div>
   );

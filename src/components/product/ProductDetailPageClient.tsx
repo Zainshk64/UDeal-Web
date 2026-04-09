@@ -29,6 +29,7 @@ import { useFavorite } from "@/hooks/useFavorite";
 import { useProductSession } from "@/hooks/useProductSession";
 import { cn } from "@/src/utils/cn";
 import { ImageViewer } from "@/src/components/product/ImagePreview";
+import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
 
 export default function ProductDetailPageClient() {
   const params = useParams();
@@ -313,6 +314,11 @@ export default function ProductDetailPageClient() {
                     onReport={() => setReportModalVisible(true)}
                   />
                 </motion.div>
+                <GoogleAdSlot
+                  slot="sidebar"
+                  format="rectangle"
+                  responsive={false}
+                />
               </div>
             </div>
           </div>

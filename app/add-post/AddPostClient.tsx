@@ -9,10 +9,14 @@ import { Step1Category } from '@/src/components/addpost/Step1Category';
 import { Step2Subcategory } from '@/src/components/addpost/Step2Subcategory';
 import { Step3AdDetails } from '@/src/components/addpost/Step3AdDetails';
 import { ROUTES, CATEGORIES } from '@/src/utils/constants';
+import AppAdBanner from '@/src/components/ads/AppAdBanner';
+import GoogleAdSlot from '@/src/components/ads/GoogleAdSlot';
+import { usePageAds } from '@/src/hooks/usePageAds';
 
 type AddPostStep = 1 | 2 | 3;
 
 export default function AddPostPage() {
+  const { ads } = usePageAds('All Listings Page');
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -81,6 +85,9 @@ export default function AddPostPage() {
             </p>
           </div>
         </section>
+        <div className="mx-auto max-w-6xl px-4 mt-4 sm:px-6 lg:px-8">
+          <AppAdBanner ad={ads.top} className="mb-4" />
+        </div>
 
         {/* Progress Bar */}
         <section className="px-4 sm:px-6 lg:px-8 py-6">
@@ -114,61 +121,74 @@ export default function AddPostPage() {
 
         {/* Content */}
         <section className="py-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <AnimatePresence mode="wait">
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Step1Category
-                    selectedCategory={selectedCategory}
-                    onSelect={setSelectedCategory}
-                  />
-                </motion.div>
-              )}
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-9">
+              <AnimatePresence mode="wait">
+                {currentStep === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Step1Category
+                      selectedCategory={selectedCategory}
+                      onSelect={setSelectedCategory}
+                    />
+                  </motion.div>
+                )}
 
-                           {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Step2Subcategory
-                    categoryId={selectedCategory || 0}
-                    selectedSubcategory={selectedSubcategory}
-                    onSelect={(id, name) => {
-                      setSelectedSubcategory(id);
-                      setSelectedSubcategoryName(name);
-                      // Auto-advance to step 3 after 500ms
-                      setTimeout(() => setCurrentStep(3), 500);
-                    }}
-                  />
-                </motion.div>
-              )}
+                {currentStep === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Step2Subcategory
+                      categoryId={selectedCategory || 0}
+                      selectedSubcategory={selectedSubcategory}
+                      onSelect={(id, name) => {
+                        setSelectedSubcategory(id);
+                        setSelectedSubcategoryName(name);
+                        // Auto-advance to step 3 after 500ms
+                        setTimeout(() => setCurrentStep(3), 500);
+                      }}
+                    />
+                  </motion.div>
+                )}
 
-              {currentStep === 3 && selectedCategory && selectedSubcategory && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Step3AdDetails
-                    categoryId={selectedCategory}
-                    subCatId={selectedSubcategory}
-                    categoryName={categoryName}
-                    subcategoryName={selectedSubcategoryName}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                {currentStep === 3 && selectedCategory && selectedSubcategory && (
+                  <motion.div
+                    key="step3"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Step3AdDetails
+                      categoryId={selectedCategory}
+                      subCatId={selectedSubcategory}
+                      categoryName={categoryName}
+                      subcategoryName={selectedSubcategoryName}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <aside className="hidden lg:block lg:col-span-3">
+              <div className="sticky top-28 space-y-4">
+                <GoogleAdSlot
+                  slot="sidebar"
+                  className=""
+                  format="rectangle"
+                  responsive={false}
+                />
+                <AppAdBanner ad={ads.center} />
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -205,6 +225,9 @@ export default function AddPostPage() {
             )}
           </div>
         </section>
+        <div className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 lg:px-8">
+          <AppAdBanner ad={ads.bottom} />
+        </div>
       </div>
     </>
   );

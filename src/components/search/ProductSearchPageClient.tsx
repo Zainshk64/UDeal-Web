@@ -26,11 +26,15 @@ import { ProductSearchFilters } from '@/src/components/search/ProductSearchFilte
 import { SearchProductCard } from '@/src/components/search/SearchProductCard';
 import { Pagination } from '@/src/components/seller/Pagination';
 import { getRecentSearches, pushRecentSearch, removeRecentSearch } from '@/src/components/search/searchUtils';
+import AppAdBanner from '@/src/components/ads/AppAdBanner';
+import GoogleAdSlot from '@/src/components/ads/GoogleAdSlot';
+import { usePageAds } from '@/src/hooks/usePageAds';
 
 const RECENT_KEY = 'udz_recent_product_searches';
 const PAGE_SIZE = 30;
 
 export default function ProductSearchPageClient() {
+  const { ads } = usePageAds('All Listings Page');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -131,6 +135,7 @@ export default function ProductSearchPageClient() {
   return (
     <div className="min-h-screen bg-gray-50 pt-24">
       <div className="mx-auto w-full max-w-7xl px-3 pb-8 sm:px-4">
+        <AppAdBanner ad={ads.top} className="mb-4" />
         <div className="rounded-2xl border border-white/50 bg-white/80 p-3 shadow-sm backdrop-blur md:p-4">
           <div className="relative">
             <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -296,8 +301,15 @@ export default function ProductSearchPageClient() {
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {(productsQuery.data || []).map((p) => (
-                    <SearchProductCard key={p.ProductId} product={p} />
+                  {(productsQuery.data || []).map((p, idx) => (
+                    <React.Fragment key={p.ProductId}>
+                      <SearchProductCard product={p} />
+                      {(idx + 1) % 9 === 0 && ads.center ? (
+                        <div className="sm:col-span-2 xl:col-span-3">
+                          <AppAdBanner ad={ads.center} />
+                        </div>
+                      ) : null}
+                    </React.Fragment>
                   ))}
                 </div>
                 <Pagination currentPage={resultPage} totalPages={totalPages} onPageChange={setResultPage} />
@@ -306,11 +318,16 @@ export default function ProductSearchPageClient() {
           </section>
 
           <aside className="hidden xl:block xl:col-span-2">
-            <div className="sticky top-28 rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-xs text-gray-500">
-              Reserved for future ads
-            </div>
+            <GoogleAdSlot
+              slot="sidebar"
+              className="sticky top-28"
+              format="rectangle"
+              responsive={false}
+            />
           </aside>
         </div>
+        <AppAdBanner ad={ads.bottom} className="mt-6" />
+        <GoogleAdSlot slot="listings" className="mt-4" />
       </div>
     </div>
   );

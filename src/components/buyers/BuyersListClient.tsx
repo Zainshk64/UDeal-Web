@@ -17,12 +17,16 @@ import {
   type BuyerCard,
   type BuyerCity,
 } from '@/src/api/services/buyerApi';
+import AppAdBanner from '@/src/components/ads/AppAdBanner';
+import GoogleAdSlot from '@/src/components/ads/GoogleAdSlot';
+import { usePageAds } from '@/src/hooks/usePageAds';
 
 const PAGE_SIZE = 30;
 
 type SortKey = 'recent' | 'title' | 'price_asc' | 'price_desc';
 
 export default function BuyersListClient() {
+  const { ads } = usePageAds('All Listings Page');
   const [cards, setCards] = useState<BuyerCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -143,7 +147,9 @@ export default function BuyersListClient() {
         </Container>
       </section>
 
-      
+      <Container className="mt-4">
+        <AppAdBanner ad={ads.top} className="mb-4" />
+      </Container>
 
       <Container className="mt-4 pb-16">
                 <motion.div
@@ -281,6 +287,12 @@ export default function BuyersListClient() {
                   </select>
                 </div>
               </div>
+              <GoogleAdSlot
+                slot="buyer"
+                className="mt-6"
+                format="rectangle"
+                responsive={false}
+              />
             </div>
           </aside>
 
@@ -360,35 +372,41 @@ export default function BuyersListClient() {
               <>
                 <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {filtered.map((c, i) => (
-                    <motion.li
-                      key={c.ProductReqId}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.02 }}
-                      className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                      <h3 className="line-clamp-2 min-h-[2.75rem] font-semibold text-gray-900">
-                        {c.RequiredTitle}
-                      </h3>
-                      <p className="mt-2 text-sm font-medium text-[#003049]">
-                        {formatPriceRange(c.PriceRange)}
-                      </p>
-                      <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
-                        <FiMapPin className="h-3.5 w-3.5 shrink-0" />
-                        <span className="line-clamp-1">{c.Address}</span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-gray-400">
-                        <FiClock className="h-3.5 w-3.5" />
-                        {c.TimeAgo}
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500">By {c.BuyerName}</p>
-                      <Link
-                        href={`${ROUTES.BUYERS}/${c.ProductReqId}`}
-                        className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#F97316] py-2.5 text-sm font-semibold text-white hover:bg-[#ea580c]"
+                    <React.Fragment key={c.ProductReqId}>
+                      <motion.li
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
                       >
-                        View details
-                      </Link>
-                    </motion.li>
+                        <h3 className="line-clamp-2 min-h-[2.75rem] font-semibold text-gray-900">
+                          {c.RequiredTitle}
+                        </h3>
+                        <p className="mt-2 text-sm font-medium text-[#003049]">
+                          {formatPriceRange(c.PriceRange)}
+                        </p>
+                        <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                          <FiMapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span className="line-clamp-1">{c.Address}</span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-1 text-xs text-gray-400">
+                          <FiClock className="h-3.5 w-3.5" />
+                          {c.TimeAgo}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">By {c.BuyerName}</p>
+                        <Link
+                          href={`${ROUTES.BUYERS}/${c.ProductReqId}`}
+                          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#F97316] py-2.5 text-sm font-semibold text-white hover:bg-[#ea580c]"
+                        >
+                          View details
+                        </Link>
+                      </motion.li>
+                      {(i + 1) % 9 === 0 && ads.center ? (
+                        <li className="md:col-span-2 xl:col-span-3">
+                          <AppAdBanner ad={ads.center} />
+                        </li>
+                      ) : null}
+                    </React.Fragment>
                   ))}
                 </ul>
                 <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
@@ -396,6 +414,7 @@ export default function BuyersListClient() {
             )}
           </section>
         </div>
+        <AppAdBanner ad={ads.bottom} className="mt-6" />
       </Container>
     </main>
   );

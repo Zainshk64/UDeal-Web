@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import Script from "next/script";
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/src/context/AuthContext';
 import { ChatProvider } from '@/src/context/ChatContext';
@@ -46,6 +47,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const fallbackRawSlot =
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_SLOT_HOME ||
+    "ca-app-pub-9986429269406301/2580107471";
+  const fallbackClientFromSlot = fallbackRawSlot.includes("/")
+    ? fallbackRawSlot.split("/")[0]
+    : undefined;
+  const googleAdsClient =
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT || fallbackClientFromSlot;
+
   return (
     <html lang="en">
       <body className="font-sans antialiased bg-white">
@@ -89,6 +99,15 @@ export default function RootLayout({
           />
         </ReactQueryProvider>
         <Analytics />
+        {googleAdsClient ? (
+          <Script
+            id="google-adsense"
+            strategy="afterInteractive"
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${googleAdsClient}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </body>
     </html>
   );

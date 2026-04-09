@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/src/components/layout/Navbar";
 import Footer from "@/src/components/layout/Footer";
 import { FloatingSiteWidgets } from "@/src/components/layout/FloatingSiteWidgets";
+import { beginAdsPrefetch } from "@/src/api/services/AppAdsApi";
 
 export default function SiteChrome({
   children,
@@ -12,6 +13,9 @@ export default function SiteChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  useEffect(() => {
+    beginAdsPrefetch();
+  }, []);
   const isAuthRoute = pathname.startsWith("/auth");
   const isHome =
     pathname === "/" ||

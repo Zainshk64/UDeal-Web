@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiArrowUp, FiRefreshCw } from "react-icons/fi";
 import { useHomeData } from "@/hooks/useHomeData";
-import { useLocation } from "@/hooks/useLocation";
 import { useAuth } from "@/src/context/AuthContext";
 import { HeroSection } from "./HeroSection";
 import { CategoryStrip } from "./CategoryStrip";
@@ -19,8 +18,12 @@ import { LocationToggle } from "./LocationToggle";
 import { toast } from "sonner";
 import Link from "next/link";
 import { toggleFavorite } from "@/src/api/services/HomeApi";
+import AppAdBanner from "@/src/components/ads/AppAdBanner";
+import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
+import { usePageAds } from "@/src/hooks/usePageAds";
 
 export const HomePage: React.FC = () => {
+  const { ads } = usePageAds("Home Page");
   const { isAuthenticated, user } = useAuth();
   const { homeData, isLoading, error, dataSource, switchDataSource, refetch } =
     useHomeData();
@@ -141,12 +144,17 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen">
+      
+
       {/* Hero Section */}
       <HeroSection />
 
       {/* Category Strip (Floating) */}
       <CategoryStrip />
 
+      <Container className="pt-6">
+        <AppAdBanner ad={ads.top} className="mb-4" />
+      </Container>
       {/* Main Content */}
       <main>
         {/* Location Toggle */}
@@ -188,6 +196,8 @@ export const HomePage: React.FC = () => {
               cities={homeData.cities}
               // onCityClick={handleCityClick}
             />
+            <AppAdBanner ad={ads.center} className="mt-6" />
+            <GoogleAdSlot slot="home" className="mt-4" />
           </Container>
         )}
 
@@ -324,7 +334,10 @@ export const HomePage: React.FC = () => {
         </section>
       </main>
 
-   
+      <Container className="pb-8">
+        <AppAdBanner ad={ads.bottom} />
+      </Container>
+
       {/* <Footer /> */}
     </div>
   );

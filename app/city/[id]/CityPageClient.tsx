@@ -31,6 +31,9 @@ import { toggleFavorite } from '@/src/api/services/HomeApi';
 import { formatCurrency } from '@/src/utils/format';
 import { cn } from '@/src/utils/cn';
 import { CATEGORIES, ROUTES } from '@/src/utils/constants';
+import AppAdBanner from '@/src/components/ads/AppAdBanner';
+import GoogleAdSlot from '@/src/components/ads/GoogleAdSlot';
+import { usePageAds } from '@/src/hooks/usePageAds';
 
 const PAGE_SIZE = 30;
 
@@ -39,6 +42,7 @@ export default function CityPageClient() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const cityId = params?.id ? Number(params.id) : 0;
+  const { ads } = usePageAds('All Listings Page');
 
   // State
   const [products, setProducts] = useState<CityProduct[]>([]);
@@ -159,7 +163,7 @@ export default function CityPageClient() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-        {/* Hero Banner */}
+      {/* Hero Banner */}
       <section className="relative py-20 overflow-hidden">
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#003049] via-[#00496b] to-[#006d96]" />
@@ -224,6 +228,9 @@ export default function CityPageClient() {
           </div>
         </Container>
       </section>
+      <Container className="mt-4">
+        <AppAdBanner ad={ads.top} className="mb-4" />
+      </Container>
 
       <Container className="mt-4">
         {/* Category capsules */}
@@ -329,13 +336,12 @@ export default function CityPageClient() {
                 </div>
               </div>
 
-              {/* Sidebar Ads */}
-              <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                <p className="text-xs font-semibold text-gray-700">Ads</p>
-                <div className="mt-2 flex h-64 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-center text-xs text-gray-500 px-3">
-                  Google Ads Space
-                </div>
-              </div>
+              <GoogleAdSlot
+                slot="city"
+                className="mt-6"
+                format="rectangle"
+                responsive={false}
+              />
             </div>
           </aside>
 
@@ -423,14 +429,14 @@ export default function CityPageClient() {
                     const isFavLoading = favLoading === product.ProductId;
 
                     return (
-                      <motion.div
-                        key={product.ProductId}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.02 }}
-                      >
-                        <Link href={`/product/${product.ProductId}`}>
-                          <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+                      <React.Fragment key={product.ProductId}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.02 }}
+                        >
+                          <Link href={`/product/${product.ProductId}`}>
+                            <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
                             <div className="relative h-48 w-full bg-gray-200">
                               <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
                                 {product.IsFeatured && (
@@ -492,9 +498,15 @@ export default function CityPageClient() {
                                 </span>
                               </div>
                             </div>
-                          </article>
-                        </Link>
-                      </motion.div>
+                            </article>
+                          </Link>
+                        </motion.div>
+                        {(idx + 1) % 9 === 0 && ads.center ? (
+                          <div className="sm:col-span-2 xl:col-span-3">
+                            <AppAdBanner ad={ads.center} />
+                          </div>
+                        ) : null}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -508,6 +520,9 @@ export default function CityPageClient() {
             )}
           </section>
         </div>
+      </Container>
+      <Container className="pb-8">
+        <AppAdBanner ad={ads.bottom} />
       </Container>
     </main>
   );
