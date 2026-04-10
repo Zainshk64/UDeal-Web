@@ -30,17 +30,38 @@ interface MyAdCardProps {
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffDays = Math.ceil(
-    Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-  );
 
-  if (diffDays < 1) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const diffMs = now.getTime() - date.getTime();
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // ✅ Just now
+  if (seconds < 60) return "Just now";
+
+  // ✅ Minutes ago
+  if (minutes < 60) return `${minutes}m ago`;
+
+  // ✅ Hours ago
+  if (hours < 24) return `${hours}h ago`;
+
+  // ✅ Yesterday
+  if (days === 1) return "Yesterday";
+
+  // ✅ Days ago
+  if (days < 7) return `${days}d ago`;
+
+  // ✅ Weeks ago
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+
+  // ✅ Fallback date
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+  });
 };
-
 export const MyAdCard: React.FC<MyAdCardProps> = ({
   ad,
   onView,
@@ -106,7 +127,10 @@ export const MyAdCard: React.FC<MyAdCardProps> = ({
         </div>
 
         {/* Details */}
-        <Link href={`/product/${ad.productId}`} className="flex-1 p-4 min-w-0 hover:bg-gray-50/50 transition-colors">
+        <Link
+          href={`/product/${ad.productId}?isgeneral=false`}
+          className="flex-1 p-4 min-w-0 hover:bg-gray-50/50 transition-colors"
+        >
           <h3 className="text-sm font-bold text-[#003049] truncate">
             {ad.prodcutTitle}
           </h3>

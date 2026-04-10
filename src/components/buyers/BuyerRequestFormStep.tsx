@@ -462,6 +462,8 @@ export function BuyerRequestFormStep({
           <div className="mt-4">
             <AddPostPhoneVerify
               userId={userId}
+              otpOnly
+              externalDigits={phoneDigits}
               initialMobNumber={phoneDigits.length === 10 ? `+92${phoneDigits}` : undefined}
               onVerified={(apiPhone) => {
                 setPhoneVerifiedForSubmit(true);

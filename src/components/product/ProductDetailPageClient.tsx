@@ -37,7 +37,9 @@ export default function ProductDetailPageClient() {
   const { isAuthenticated, user } = useAuth();
   const productId = params?.id ? Number(params.id) : undefined;
   const searchParams = useSearchParams();
-  const isGeneral = searchParams.get("isgeneral") !== "false"; // defaults to true
+  const isGeneral =
+    searchParams.get("isgeneral") !== "false" &&
+    searchParams.get("isGeneral") !== "false";
 
   // Track session
   useProductSession(productId);

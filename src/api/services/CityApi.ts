@@ -1,5 +1,6 @@
 import apiClient from './api';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/src/utils/image';
 
 // ============================================
 // TYPES
@@ -88,7 +89,5 @@ export const getCityProducts = async (
 // ============================================
 
 export const getCityProductImage = (path: string | null): string => {
-  if (!path) return 'https://via.placeholder.com/300x200?text=No+Image';
-  if (path.startsWith('http')) return path;
-  return `https://udealzone.com/Members/${path}`;
+  return getImageUrl(path);
 };

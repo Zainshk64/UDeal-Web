@@ -6,11 +6,10 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiSmartphone } from 'react-icons/fi';
-import { login, signInWithGoogleBackend } from '@/src/api/services/AuthApi';
+import { login, signInWithGoogleWeb } from '@/src/api/services/AuthApi';
 import { ROUTES } from '@/src/utils/constants';
 import { isEmailIdentifier, isPhoneIdentifier } from '@/src/api/services/AuthApi';
 import { useAuth } from '@/src/context/AuthContext';
-import { promptGoogleCredential } from '@/src/utils/googleAuth';
 import { toast } from 'sonner';
 
 export default function LoginClient() {
@@ -68,8 +67,7 @@ export default function LoginClient() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      const googleUser = await promptGoogleCredential();
-      const data = await signInWithGoogleBackend(googleUser);
+      const data = await signInWithGoogleWeb();
       if (data) {
         refreshAuth();
         router.push(ROUTES.HOME);

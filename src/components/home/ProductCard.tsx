@@ -59,7 +59,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const imageUrl = getImageUrl(product.PicPath);
 
   return (
-<Link href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}?isGeneral=true`}>
+<Link href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}?isgeneral=true`}>
       <motion.div
         className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 h-full flex flex-col cursor-pointer group"
         whileHover={{ translateY: -4 }}

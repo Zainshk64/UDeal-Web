@@ -665,6 +665,97 @@ export const logout = async (): Promise<void> => {
 // GOOGLE AUTH (STRUCTURE)
 // ============================================
 
+/**
+ * Google sign-in via Firebase ID token — same contract as mobile `POST /auth/googleauth`.
+ * Requires NEXT_PUBLIC_FIREBASE_* env vars; use `signInWithGoogleWeb` for automatic fallback.
+ */
+export const signInWithGoogleFirebaseToken = async (): Promise<AuthResponse | null> => {
+  try {
+    const { getFirebaseAuth, signInWithGoogleAndGetIdToken } = await import("@/src/lib/firebaseAuth");
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      toast.error("Google sign-in is not configured", {
+        description: "Add Firebase web config (NEXT_PUBLIC_FIREBASE_*) in your environment.",
+      });
+      return null;
+    }
+
+    const firebaseIdToken = await signInWithGoogleAndGetIdToken(auth);
+    const response = await apiClient.post<AuthResponse>("/auth/googleauth", {
+      firebaseIdToken,
+    });
+    const data = response.data;
+
+    if (data.returnCode && data.accessToken) {
+      setStoredToken(data.accessToken, "access");
+      if (data.refreshToken) {
+        setStoredToken(data.refreshToken, "refresh");
+      }
+
+      setUserData({
+        userId: data.userId ?? undefined,
+        email: data.email || undefined,
+        fullName: data.fullName || data.name,
+        name: data.name || data.fullName,
+        mobNumber: data.mobNumber,
+        cityName: data.cityName,
+        cityId: data.cityId ?? undefined,
+        userType: data.userType,
+        promocode: data.promocode ?? data.userPromoCode,
+        imageurl: data.imageurl,
+        totalReferrals: data.totalReferrals || 0,
+        emailVerified: true,
+      });
+
+      const display = data.name || data.fullName || "User";
+      const needsCity = !data.cityId || data.cityId === 0;
+      if (needsCity) {
+        toast.info(`Welcome, ${display}!`, {
+          description: "Please set your city in your profile to explore listings.",
+        });
+      } else {
+        toast.success(`Welcome back, ${display}!`, {
+          description: "Logged in successfully.",
+        });
+      }
+
+      return data;
+    }
+
+    toast.error("Google login failed", {
+      description: data.returnText || "Please try again or use email login.",
+    });
+    return null;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.returnText ||
+      error.message ||
+      "Google sign-in failed";
+    toast.error("Google sign-in error", { description: msg });
+    console.error("Firebase Google auth error:", error);
+    return null;
+  }
+};
+
+/**
+ * Web Google sign-in: Firebase + `/auth/googleauth` when configured; otherwise GIS + `/auth/SignInWithGoogle`.
+ */
+export const signInWithGoogleWeb = async (
+  phone: string = "",
+  cityId: number = 0,
+  gender: string = "",
+): Promise<any> => {
+  const { isFirebaseAuthConfigured } = await import("@/src/lib/firebaseAuth");
+  if (typeof window !== "undefined" && isFirebaseAuthConfigured()) {
+    const res = await signInWithGoogleFirebaseToken();
+    return res;
+  }
+
+  const { promptGoogleCredential } = await import("@/src/utils/googleAuth");
+  const googleUser = await promptGoogleCredential();
+  return signInWithGoogleBackend(googleUser, phone, cityId, gender);
+};
+
 export const signInWithGoogleBackend = async (
   googleUser: {
     email: string;

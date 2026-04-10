@@ -80,7 +80,7 @@ export default function SelectPaymentMethodClient() {
       color: 'bg-gradient-to-br from-primary to-primary-dark',
       iconBg: 'bg-primary/10',
       iconColor: 'text-primary',
-      badge: 'Most Secure',
+      // badge: 'Most Secure',
     },
   ];
 
@@ -188,7 +188,7 @@ export default function SelectPaymentMethodClient() {
         </div>
 
         {/* Security Features */}
-        <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-8 shadow-lg">
+        {/* <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-8 shadow-lg">
           <h3 className="mb-6 text-center text-xl font-bold text-gray-900">
             Why our payments are secure
           </h3>
@@ -219,7 +219,7 @@ export default function SelectPaymentMethodClient() {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
       </Container>
     </main>
   );

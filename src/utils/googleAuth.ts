@@ -59,29 +59,61 @@ export const promptGoogleCredential = async (): Promise<GoogleProfilePayload> =>
   }
 
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const timeoutMs = 120_000;
+    const t = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      if (container.parentNode) container.parentNode.removeChild(container);
+      reject(new Error('Google sign-in timed out.'));
+    }, timeoutMs);
+
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(t);
+      if (container.parentNode) container.parentNode.removeChild(container);
+      fn();
+    };
+
+    const container = document.createElement('div');
+    container.setAttribute('aria-hidden', 'true');
+    container.style.cssText =
+      'position:fixed;left:0;top:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:-1;';
+    document.body.appendChild(container);
+
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: (response: { credential?: string }) => {
         if (!response.credential) {
-          reject(new Error('Google did not return credential.'));
+          finish(() => reject(new Error('Google did not return credential.')));
           return;
         }
         const payload = parseJwtPayload(response.credential);
-        resolve({
-          email: payload.email || '',
-          name: payload.name || '',
-          id: payload.sub || '',
-        });
+        finish(() =>
+          resolve({
+            email: payload.email || '',
+            name: payload.name || '',
+            id: payload.sub || '',
+          }),
+        );
       },
       ux_mode: 'popup',
       auto_select: false,
     });
 
-    window.google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-        // Open one-tap disabled/blocked cases via fallback native button
-        window.google.accounts.id.renderButton(document.createElement('div'), { theme: 'outline' });
-      }
+    window.google.accounts.id.renderButton(container, {
+      theme: 'outline',
+      size: 'large',
+      type: 'standard',
+      text: 'signin_with',
     });
+
+    const btn = container.querySelector<HTMLElement>('div[role="button"]');
+    if (btn) {
+      btn.click();
+    } else {
+      finish(() => reject(new Error('Could not start Google sign-in. Allow popups and use a Web OAuth client ID.')));
+    }
   });
 };

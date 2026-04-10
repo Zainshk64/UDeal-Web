@@ -14,14 +14,13 @@ import {
   isPhoneIdentifier,
   sendIdentifierOtp,
   verifyIdentifierOtp,
-  signInWithGoogleBackend,
+  signInWithGoogleWeb,
 } from '@/src/api/services/AuthApi';
 import { ROUTES, VALIDATION } from '@/src/utils/constants';
 import { validateEmail, validatePasswordStrength } from '@/src/utils/format';
 import { useAuth } from '@/src/context/AuthContext';
 import OtpCodeInput from '@/src/components/auth/OtpCodeInput';
 import PakistanPhoneInput from '@/src/components/auth/PakistanPhoneInput';
-import { promptGoogleCredential } from '@/src/utils/googleAuth';
 import { toast } from 'sonner';
 
 interface City {
@@ -250,12 +249,7 @@ export default function SignupClient() {
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
     try {
-      const googleUser = await promptGoogleCredential();
-      if (!googleUser.email) {
-        toast.error('Google account email is required.');
-        return;
-      }
-      const data = await signInWithGoogleBackend(googleUser);
+      const data = await signInWithGoogleWeb();
       if (data) {
         refreshAuth();
         router.push(ROUTES.HOME);

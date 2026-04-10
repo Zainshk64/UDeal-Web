@@ -4,7 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container } from '@/src/components/ui/Container';
-import { useAuth } from '@/src/context/AuthContext';
 import {
   generateAlfalahAuthToken,
   getAlfalahSsoHtml,
@@ -35,39 +34,69 @@ type PaymentState =
   | 'success'
   | 'failed';
 
-// ✅ URL Detection for Bank Redirects
+// Bank return URLs (production) + legacy path fragments (sandbox / RN parity)
 const isBankSuccess = (url: string) => {
   const lower = url.toLowerCase();
+  const paymentDoneOk =
+    lower.includes('paymentdone.aspx') && lower.includes('rc=00');
+  const statusUpdateOk =
+    lower.includes('paymentstatusupdate.aspx') &&
+    (lower.includes('rc=00') || lower.includes('success'));
   return (
     lower.includes('successpayment') ||
-    (lower.includes('paymentdone.aspx') && lower.includes('rc=00'))
+    paymentDoneOk ||
+    statusUpdateOk
   );
 };
 
 const isBankFailure = (url: string) => {
   const lower = url.toLowerCase();
+  const paymentDoneBad =
+    lower.includes('paymentdone.aspx') && !lower.includes('rc=00');
+  const statusUpdateBad =
+    lower.includes('paymentstatusupdate.aspx') &&
+    lower.includes('fail');
   return (
     lower.includes('declinepayment') ||
-    (lower.includes('paymentdone.aspx') && !lower.includes('rc=00'))
+    paymentDoneBad ||
+    statusUpdateBad
   );
 };
+
+function openBankCheckoutWindow(html: string): Window | null {
+  const features =
+    'width=440,height=780,scrollbars=yes,resizable=yes,status=no,toolbar=no,menubar=no';
+  const popup = window.open('', 'udz_bank_alfalah_checkout', features);
+  if (!popup) return null;
+  try {
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+  } catch {
+    popup.close();
+    return null;
+  }
+  popup.focus();
+  return popup;
+}
 
 export default function BankCardPaymentClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-
   const planId = searchParams.get('planId');
   const price = searchParams.get('price');
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const bankPopupRef = useRef<Window | null>(null);
   const isHandledRef = useRef(false);
-  const messageListenerRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const userCancelledRef = useRef(false);
+  const ipnPollBusyRef = useRef(false);
+  const completeHandlerRef = useRef<(oid: string) => Promise<void>>(async () => {});
+  const failHandlerRef = useRef<() => void>(() => {});
 
   const [paymentState, setPaymentState] = useState<PaymentState>('idle');
   const [ssoHtml, setSsoHtml] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [iframeLoading, setIframeLoading] = useState(true);
+  const [checkoutUiBusy, setCheckoutUiBusy] = useState(true);
   const [statusMessage, setStatusMessage] = useState('');
   const [resultInfo, setResultInfo] = useState<{
     status: string;
@@ -79,19 +108,30 @@ export default function BankCardPaymentClient() {
 
   const planPrice = price ? Number(price) : 0;
 
-  // ══════════════════════════════════════════════
-  // CLEANUP: Remove message listener on unmount
-  // ══════════════════════════════════════════════
   useEffect(() => {
     return () => {
-      if (messageListenerRef.current) {
-        window.removeEventListener('message', messageListenerRef.current);
-      }
+      bankPopupRef.current?.close();
+      bankPopupRef.current = null;
     };
   }, []);
 
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (
+        paymentState === 'webview' ||
+        paymentState === 'calling_ipn' ||
+        paymentState === 'activating_plan'
+      ) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [paymentState]);
+
   // ══════════════════════════════════════════════
-  // STEP 1 + 2: Generate Token → Load SSO HTML
+  // STEP 1 + 2: Generate Token → Load SSO HTML → top-level popup (not iframe)
   // ══════════════════════════════════════════════
   const startPayment = async () => {
     if (!planId || !planPrice) {
@@ -101,6 +141,10 @@ export default function BankCardPaymentClient() {
 
     try {
       isHandledRef.current = false;
+      userCancelledRef.current = false;
+      bankPopupRef.current?.close();
+      bankPopupRef.current = null;
+
       setPaymentState('generating_token');
       setResultInfo(null);
       setStatusMessage('Creating secure payment session...');
@@ -116,13 +160,25 @@ export default function BankCardPaymentClient() {
       console.log('🏦 Step 2: Getting SSO HTML');
       const html = await getAlfalahSsoHtml(tokenRes.orderId, tokenRes.authToken);
 
+      setCheckoutUiBusy(true);
+      const popup = openBankCheckoutWindow(html);
+      if (!popup) {
+        setSsoHtml(html);
+        setPaymentState('failed');
+        setResultInfo({
+          status: 'Failed',
+          message:
+            'Your browser blocked the payment window. Allow popups for this site and try again.',
+        });
+        toast.error('Popup blocked — allow popups to pay with Bank Alfalah');
+        return;
+      }
+
+      bankPopupRef.current = popup;
       setSsoHtml(html);
       setPaymentState('webview');
-      setIframeLoading(true);
-      console.log('✅ SSO HTML loaded, opening payment gateway...');
-
-      // Setup iframe message listener
-      setupIframeListener(tokenRes.orderId);
+      setCheckoutUiBusy(false);
+      console.log('✅ Bank checkout opened in popup (top-level; avoids X-Frame-Options)');
     } catch (error: any) {
       console.error('❌ Payment start failed:', error?.message);
       setPaymentState('failed');
@@ -134,79 +190,20 @@ export default function BankCardPaymentClient() {
     }
   };
 
-  // ══════════════════════════════════════════════
-  // STEP 3: Listen to iframe navigation/messages
-  // ══════════════════════════════════════════════
-  const setupIframeListener = (currentOrderId: string) => {
-    // Remove previous listener if exists
-    if (messageListenerRef.current) {
-      window.removeEventListener('message', messageListenerRef.current);
+  const reopenCheckoutPopup = () => {
+    if (!ssoHtml) {
+      toast.error('Session expired — start payment again.');
+      return;
     }
-
-    const handleMessage = (event: MessageEvent) => {
-      // Security check - only accept messages from trusted domains
-      const trustedDomains = [
-        'https://sandbox.bankalfalah.com',
-        'https://payments.bankalfalah.com',
-      ];
-
-      if (!trustedDomains.some((domain) => event.origin.includes(domain))) {
-        return;
-      }
-
-      console.log('📨 Received message from iframe:', event.data);
-
-      // Check for payment completion signals
-      if (typeof event.data === 'string') {
-        const lower = event.data.toLowerCase();
-
-        if (isBankSuccess(lower)) {
-          console.log('✅ Bank SUCCESS detected from message');
-          handleBankPaymentCompleted(currentOrderId);
-        } else if (isBankFailure(lower)) {
-          console.log('❌ Bank FAILURE detected from message');
-          handleBankPaymentFailed();
-        }
-      }
-    };
-
-    messageListenerRef.current = handleMessage;
-    window.addEventListener('message', handleMessage);
+    bankPopupRef.current?.close();
+    const popup = openBankCheckoutWindow(ssoHtml);
+    if (!popup) {
+      toast.error('Popup still blocked. Check browser settings.');
+      return;
+    }
+    bankPopupRef.current = popup;
+    toast.message('Checkout window reopened');
   };
-
-  // Monitor iframe URL changes via interval (fallback method)
-  useEffect(() => {
-    if (paymentState !== 'webview' || !iframeRef.current || !orderId) return;
-
-    const checkInterval = setInterval(() => {
-      try {
-        const iframe = iframeRef.current;
-        if (!iframe || !iframe.contentWindow) return;
-
-        // Try to get iframe URL (may fail due to CORS)
-        try {
-          const iframeUrl = iframe.contentWindow.location.href;
-          console.log('🔍 Checking iframe URL:', iframeUrl);
-
-          if (isBankSuccess(iframeUrl)) {
-            console.log('✅ Success URL detected');
-            clearInterval(checkInterval);
-            handleBankPaymentCompleted(orderId);
-          } else if (isBankFailure(iframeUrl)) {
-            console.log('❌ Failure URL detected');
-            clearInterval(checkInterval);
-            handleBankPaymentFailed();
-          }
-        } catch (e) {
-          // CORS blocked - this is normal, ignore
-        }
-      } catch (error) {
-        console.log('URL check error:', error);
-      }
-    }, 1000);
-
-    return () => clearInterval(checkInterval);
-  }, [paymentState, orderId]);
 
   // ══════════════════════════════════════════════
   // STEP 4 + 5: IPN → Subscription (Sequential)
@@ -227,6 +224,12 @@ export default function BankCardPaymentClient() {
     }
 
     isHandledRef.current = true;
+    try {
+      bankPopupRef.current?.close();
+    } catch {
+      /* ignore */
+    }
+    bankPopupRef.current = null;
     setSsoHtml(null);
 
     try {
@@ -299,6 +302,12 @@ export default function BankCardPaymentClient() {
     if (isHandledRef.current) return;
 
     isHandledRef.current = true;
+    try {
+      bankPopupRef.current?.close();
+    } catch {
+      /* ignore */
+    }
+    bankPopupRef.current = null;
     setSsoHtml(null);
     setPaymentState('failed');
     setResultInfo({
@@ -313,6 +322,20 @@ export default function BankCardPaymentClient() {
     if (paymentState === 'calling_ipn' || paymentState === 'activating_plan') {
       toast.info('Please wait, payment is being processed...');
       return;
+    }
+
+    if (paymentState === 'webview') {
+      const leave = window.confirm(
+        'Leave secure checkout? If you already completed payment, stay here until we confirm. Exit anyway?',
+      );
+      if (!leave) return;
+      userCancelledRef.current = true;
+      try {
+        bankPopupRef.current?.close();
+      } catch {
+        /* ignore */
+      }
+      bankPopupRef.current = null;
     }
 
     isHandledRef.current = true;
@@ -333,11 +356,77 @@ export default function BankCardPaymentClient() {
 
   const handleRetry = () => {
     isHandledRef.current = false;
+    userCancelledRef.current = false;
+    bankPopupRef.current?.close();
+    bankPopupRef.current = null;
     setSsoHtml(null);
     setOrderId(null);
     setResultInfo(null);
     setPaymentState('idle');
   };
+
+  completeHandlerRef.current = async (oid: string) => {
+    await handleBankPaymentCompleted(oid);
+  };
+  failHandlerRef.current = () => {
+    handleBankPaymentFailed();
+  };
+
+  // Poll popup URL when it returns to same origin as this app (production on udealzone.com).
+  useEffect(() => {
+    if (paymentState !== 'webview' || !orderId) return;
+    const oid = orderId;
+    const tick = window.setInterval(() => {
+      if (isHandledRef.current || userCancelledRef.current) return;
+      const w = bankPopupRef.current;
+      if (!w) return;
+      if (w.closed) {
+        window.clearInterval(tick);
+        if (!userCancelledRef.current && !isHandledRef.current) {
+          void completeHandlerRef.current(oid);
+        }
+        return;
+      }
+      try {
+        const url = w.location.href;
+        if (isBankSuccess(url)) {
+          window.clearInterval(tick);
+          w.close();
+          void completeHandlerRef.current(oid);
+        } else if (isBankFailure(url)) {
+          window.clearInterval(tick);
+          w.close();
+          failHandlerRef.current();
+        }
+      } catch {
+        /* cross-origin while on bank host */
+      }
+    }, 600);
+    return () => window.clearInterval(tick);
+  }, [paymentState, orderId]);
+
+  // Localhost / cross-origin return: poll IPN while checkout popup is open (same as verifying after RN success).
+  useEffect(() => {
+    if (paymentState !== 'webview' || !orderId) return;
+    const oid = orderId;
+    const tick = window.setInterval(async () => {
+      if (isHandledRef.current || userCancelledRef.current) return;
+      const w = bankPopupRef.current;
+      if (!w || w.closed) return;
+      if (ipnPollBusyRef.current) return;
+      ipnPollBusyRef.current = true;
+      try {
+        const r = await callAlfalahIpnListener(oid, 1, 0);
+        if (r.responseCode && !isHandledRef.current) {
+          w.close();
+          await completeHandlerRef.current(oid);
+        }
+      } finally {
+        ipnPollBusyRef.current = false;
+      }
+    }, 5000);
+    return () => window.clearInterval(tick);
+  }, [paymentState, orderId]);
 
   const isLoading = paymentState === 'generating_token' || paymentState === 'loading_sso';
   const isProcessing = paymentState === 'calling_ipn' || paymentState === 'activating_plan';
@@ -349,7 +438,7 @@ export default function BankCardPaymentClient() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-primary to-primary-dark px-4 py-4 shadow-lg">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-primary px-4 py-4 shadow-lg">
           <button
             onClick={handleCancel}
             className="rounded-full p-2 text-white transition hover:bg-white/10"
@@ -367,31 +456,40 @@ export default function BankCardPaymentClient() {
         </div>
 
         {/* Loading Indicator */}
-        {iframeLoading && (
+        {checkoutUiBusy && (
           <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
             <div className="rounded-2xl bg-white px-6 py-4 shadow-2xl">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
-                <span className="text-gray-700">Loading checkout...</span>
+                <span className="text-gray-700">Opening checkout...</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Bank iframe */}
-        <iframe
-          ref={iframeRef}
-          srcDoc={ssoHtml}
-          className="h-full w-full flex-1"
-          onLoad={() => {
-            setIframeLoading(false);
-            console.log('✅ iframe loaded');
-          }}
-          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
-          title="Bank Alfalah Secure Payment"
-        />
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-gray-50 px-6 py-12 text-center">
+          <FiCreditCard className="h-16 w-16 text-primary" />
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Bank Alfalah checkout</h3>
+            <p className="mt-2 max-w-md text-sm text-gray-600">
+              Complete payment in the popup window. This page stays open to confirm your payment and
+              activate your plan. Do not close it until you see success or failure here.
+            </p>
+          </div>
+          {orderId && (
+            <p className="font-mono text-xs text-gray-500">
+              Order <span className="font-semibold text-gray-800">{orderId}</span>
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={reopenCheckoutPopup}
+            className="rounded-xl border-2 border-primary bg-white px-6 py-3 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/5"
+          >
+            Payment window missing? Open again
+          </button>
+        </div>
 
-        {/* Footer */}
         <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 text-center text-xs text-gray-600">
           <div className="flex items-center justify-center gap-2">
             <FiShield className="h-4 w-4 text-green-600" />
@@ -591,7 +689,7 @@ export default function BankCardPaymentClient() {
 
         <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
           {/* Header */}
-          <div className="bg-gradient-to-br from-primary to-primary-dark p-8 text-white">
+          <div className="bg-primary p-8 text-white">
             <div className="flex items-center gap-4">
               <div className="rounded-2xl bg-white/20 p-4 backdrop-blur-sm">
                 <FiCreditCard className="h-10 w-10" />
@@ -730,10 +828,10 @@ export default function BankCardPaymentClient() {
               onClick={startPayment}
               disabled={isLoading}
               className={cn(
-                'flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-lg font-bold text-white shadow-xl transition-all',
+                'flex w-full items-center cursor-pointer justify-center gap-3 rounded-2xl py-5 text-lg font-bold text-white shadow-xl transition-all',
                 isLoading
                   ? 'cursor-not-allowed bg-gray-300'
-                  : 'bg-gradient-to-r from-accent to-accent-dark hover:shadow-2xl active:scale-95'
+                  : 'bg-accent hover:shadow-2xl active:scale-95'
               )}
             >
               {isLoading ? (

@@ -4,26 +4,33 @@
  */
 
 const DEFAULT_PLACEHOLDER = 'https://via.placeholder.com/400x300?text=No+Image';
-const CDN_BASE = 'https://udealzone.com/Members';
+
+/** Site base for relative upload paths from API (handles with or without leading slash). */
+const MEMBERS_BASE = 'https://udealzone.com/Members';
 
 /**
- * Get proper image URL for product
+ * Normalize any API image path to a full URL.
+ * - Full http(s) URLs (e.g. Google avatars): returned unchanged.
+ * - Relative paths: `Uploads/...`, `/Uploads/...`, `Members/...` → single canonical URL under udealzone.com/Members.
  */
-export const getImageUrl = (path: string | null): string => {
-  if (!path) {
+export const getImageUrl = (path: string | null | undefined): string => {
+  if (path == null || String(path).trim() === '') {
     return DEFAULT_PLACEHOLDER;
   }
 
-  // If already a full URL, return as is
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
+  const p = String(path).trim();
+
+  if (p.startsWith('http://') || p.startsWith('https://')) {
+    return p;
   }
 
-  // Remove leading slash if present
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const clean = p.replace(/^\/+/, '');
 
-  // Construct CDN URL
-  return `${CDN_BASE}/${cleanPath}`;
+  if (clean.startsWith('Members/')) {
+    return `https://udealzone.com/${clean}`;
+  }
+
+  return `${MEMBERS_BASE}/${clean}`;
 };
 
 /**
@@ -73,8 +80,8 @@ export const getOptimizedImageUrl = (
     return baseUrl;
   }
 
-  // If it's a CDN URL, we can add query params
-  if (baseUrl.includes(CDN_BASE)) {
+  // If it's a site CDN URL, we can add query params
+  if (baseUrl.includes('udealzone.com/Members')) {
     const params = new URLSearchParams();
     if (width) params.append('w', width.toString());
     if (height) params.append('h', height.toString());

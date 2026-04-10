@@ -379,8 +379,8 @@ export default function BuyersListClient() {
                         transition={{ delay: i * 0.02 }}
                         className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
                       >
-                        <h3 className="line-clamp-2 min-h-[2.75rem] font-semibold text-gray-900">
-                          {c.RequiredTitle}
+                        <h3 className="line-clamp-2 min-h-[2.75rem] font-semibold text-[#F97316]">
+                          I need {c.RequiredTitle}
                         </h3>
                         <p className="mt-2 text-sm font-medium text-[#003049]">
                           {formatPriceRange(c.PriceRange)}
@@ -396,7 +396,7 @@ export default function BuyersListClient() {
                         <p className="mt-2 text-xs text-gray-500">By {c.BuyerName}</p>
                         <Link
                           href={`${ROUTES.BUYERS}/${c.ProductReqId}`}
-                          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#F97316] py-2.5 text-sm font-semibold text-white hover:bg-[#ea580c]"
+                          className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-[#F97316] py-2.5 text-sm font-semibold text-white hover:bg-[#ea580c]"
                         >
                           View details
                         </Link>

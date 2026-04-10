@@ -127,10 +127,16 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         };
       });
 
+      const hasConv = s.conversations.some((c) => c.id === cid);
+      let unreadTotal = totalUnread(convs, s.activeConversationId);
+      if (!hasConv && incoming && !viewing) {
+        unreadTotal = s.unreadTotal + 1;
+      }
+
       return {
         messagesByConversation: { ...s.messagesByConversation, [cid]: next },
         conversations: convs,
-        unreadTotal: totalUnread(convs, s.activeConversationId),
+        unreadTotal,
       };
     }),
 

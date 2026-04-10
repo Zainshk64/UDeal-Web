@@ -31,8 +31,20 @@ import {
 } from '@/src/components/addpost/fieldConfig';
 import { AddPostImageStrip } from '@/src/components/addpost/AddPostImageStrip';
 import { AddPostPhoneVerify } from '@/src/components/addpost/AddPostPhoneVerify';
+import PakistanPhoneInput from '@/src/components/auth/PakistanPhoneInput';
+import { toApiPhone } from '@/src/api/services/AuthApi';
+import { updateUserData } from '@/src/utils/storage';
 
 const EXTRA_SKIP = ['ContactNumber'];
+
+function digitsFromProfileContact(contact?: string): string {
+  if (!contact) return '';
+  const d = contact.replace(/\D/g, '');
+  if (d.length >= 12 && d.startsWith('92')) return d.slice(-10);
+  if (d.length >= 11 && d.startsWith('0')) return d.slice(1, 11);
+  if (d.length === 10 && d.startsWith('3')) return d;
+  return d.slice(-10);
+}
 
 type FieldValues = Record<string, string | number | boolean | undefined>;
 
@@ -87,11 +99,24 @@ export function Step3AdDetails({
 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showMyNumber, setShowMyNumber] = useState(true);
-  const [verifiedPhone, setVerifiedPhone] = useState('');
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [showPhoneError, setShowPhoneError] = useState(false);
+  const [phoneDigits, setPhoneDigits] = useState('');
+  const [phoneVerifiedForSubmit, setPhoneVerifiedForSubmit] = useState(false);
+  const [initialPhoneSnapshot, setInitialPhoneSnapshot] = useState('');
 
   const userId = user?.userId ?? 0;
+
+  useEffect(() => {
+    const fromUser = digitsFromProfileContact(user?.mobNumber);
+    if (fromUser) {
+      setPhoneDigits(fromUser);
+      setInitialPhoneSnapshot(fromUser);
+      setPhoneVerifiedForSubmit(true);
+    } else {
+      setPhoneDigits('');
+      setInitialPhoneSnapshot('');
+      setPhoneVerifiedForSubmit(false);
+    }
+  }, [user?.mobNumber]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,6 +140,9 @@ export function Step3AdDetails({
       .map((f) => f.FieldName)
       .filter((name) => !SKIP_FIELDS.includes(name) && !EXTRA_SKIP.includes(name));
   }, [formData.activeFields]);
+
+  const provinceIdForCity = fieldValues['ProvinceId'];
+  const makeCompanyIdForBrand = fieldValues['MakeCompanyId'];
 
   const loadDropdownOptions = useCallback(
     async (fieldName: string): Promise<StaticOption[]> => {
@@ -178,21 +206,19 @@ export function Step3AdDetails({
       }
 
       if (fieldName === 'CityId') {
-        const pid = fieldValues['ProvinceId'];
-        if (!pid) return [];
-        return getCitiesByProvince(Number(pid));
+        if (!provinceIdForCity) return [];
+        return getCitiesByProvince(Number(provinceIdForCity));
       }
       if (fieldName === 'RegCityId') return getCities();
       if (fieldName === 'MakeCompanyId') return getMakeCompanies(categoryId);
       if (fieldName === 'BrandId') {
-        const pid = fieldValues['MakeCompanyId'];
-        if (!pid) return [];
-        return getBrands(Number(pid));
+        if (!makeCompanyIdForBrand) return [];
+        return getBrands(Number(makeCompanyIdForBrand));
       }
 
       return [];
     },
-    [formData, fieldValues, categoryId]
+    [formData, categoryId, provinceIdForCity, makeCompanyIdForBrand]
   );
 
   const refreshDropdown = useCallback(
@@ -204,22 +230,34 @@ export function Step3AdDetails({
   );
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (fieldValues['ProvinceId']) {
-        const opts = await loadDropdownOptions('CityId');
-        setCachedOptions((prev) => ({ ...prev, CityId: opts }));
+      if (!provinceIdForCity) {
+        setCachedOptions((prev) => ({ ...prev, CityId: [] }));
+        return;
       }
+      const opts = await getCitiesByProvince(Number(provinceIdForCity));
+      if (!cancelled) setCachedOptions((prev) => ({ ...prev, CityId: opts }));
     })();
-  }, [fieldValues['ProvinceId'], loadDropdownOptions]);
+    return () => {
+      cancelled = true;
+    };
+  }, [provinceIdForCity]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (fieldValues['MakeCompanyId']) {
-        const opts = await loadDropdownOptions('BrandId');
-        setCachedOptions((prev) => ({ ...prev, BrandId: opts }));
+      if (!makeCompanyIdForBrand) {
+        setCachedOptions((prev) => ({ ...prev, BrandId: [] }));
+        return;
       }
+      const opts = await getBrands(Number(makeCompanyIdForBrand));
+      if (!cancelled) setCachedOptions((prev) => ({ ...prev, BrandId: opts }));
     })();
-  }, [fieldValues['MakeCompanyId'], loadDropdownOptions]);
+    return () => {
+      cancelled = true;
+    };
+  }, [makeCompanyIdForBrand]);
 
   const getFieldDisabledState = (fieldName: string): { disabled: boolean; reason: string } => {
     if (fieldName === 'BrandId') {
@@ -277,11 +315,14 @@ export function Step3AdDetails({
       toast.error('Add at least one photo.');
       return false;
     }
-    // if (!phoneVerified || !verifiedPhone) {
-    //   setShowPhoneError(true);
-    //   toast.error('Verify your contact number.');
-    //   return false;
-    // }
+    if (phoneDigits.length !== 10 || !phoneDigits.startsWith('3')) {
+      toast.error('Valid contact number required');
+      return false;
+    }
+    if (!phoneVerifiedForSubmit) {
+      toast.error('Verify your phone number with OTP');
+      return false;
+    }
 
     activeFieldNames.forEach((fieldName) => {
       const config = getFieldConfig(fieldName);
@@ -352,11 +393,17 @@ export function Step3AdDetails({
 
       const enableBool = imagesSafe;
 
+      if (!imagesSafe) {
+        toast.warning('Images need review', { description: apiResponse });
+      } else if (scan.reasons.length) {
+        toast.info('Image scan', { description: apiResponse });
+      }
+
       const data: Record<string, unknown> = {
         Enable: enableBool,
         ApiResponse: apiResponse,
         ShowMyNumber: showMyNumber,
-        ContactNumber: verifiedPhone,
+        ContactNumber: toApiPhone(`+92${phoneDigits}`),
       };
 
       activeFieldNames.forEach((fieldName) => {
@@ -541,17 +588,41 @@ export function Step3AdDetails({
 
       <div className="grid gap-4 md:grid-cols-2">{activeFieldNames.map((fn) => renderField(fn))}</div>
 
-      <AddPostPhoneVerify
-        userId={userId}
-        initialMobNumber={user?.mobNumber}
-        onVerified={(phone) => {
-          setVerifiedPhone(phone);
-          // setPhoneVerified(true);
-          setShowPhoneError(false);
-        }}
-        hasError={showPhoneError}
-        disabled={posting}
-      />
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <label className="mb-2 block text-sm font-medium text-slate-800">
+          Contact number <span className="text-red-500">*</span>
+        </label>
+        <PakistanPhoneInput
+          value={phoneDigits}
+          onChange={(d) => {
+            setPhoneDigits(d);
+            if (d !== initialPhoneSnapshot) setPhoneVerifiedForSubmit(false);
+            else if (initialPhoneSnapshot) setPhoneVerifiedForSubmit(true);
+          }}
+          disabled={posting}
+        />
+        {!phoneVerifiedForSubmit && (
+          <div className="mt-4">
+            <AddPostPhoneVerify
+              userId={userId}
+              otpOnly
+              externalDigits={phoneDigits}
+              initialMobNumber={phoneDigits.length === 10 ? `+92${phoneDigits}` : undefined}
+              onVerified={(apiPhone) => {
+                setPhoneVerifiedForSubmit(true);
+                setInitialPhoneSnapshot(phoneDigits);
+                updateUserData({ mobNumber: apiPhone });
+                toast.success('Phone verified and saved');
+              }}
+              hasError={false}
+              disabled={posting}
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Verify with OTP to confirm this number. If you changed it, we update your profile.
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

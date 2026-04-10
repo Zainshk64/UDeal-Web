@@ -106,26 +106,40 @@ export const upsertProductPictures = async (
     formData.append('CreatedByUid', createdByUid.toString());
     formData.append('Title', '');
 
+    let formIndex = 0;
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
 
       if (img.isExisting && typeof img.file === 'string') {
-        // For existing images, fetch the image and create a blob
         try {
-          const resp = await fetch(img.file);
+          const src = img.file.trim();
+          const proxyUrl =
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(src)}`
+              : src;
+          const resp = await fetch(proxyUrl);
+          if (!resp.ok) throw new Error(String(resp.status));
           const blob = await resp.blob();
-          const file = new File([blob], `existing_${i}.jpg`, { type: 'image/jpeg' });
-          formData.append(`Images[${i}].file`, file);
+          const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+          const file = new File([blob], `existing_${formIndex}.${ext}`, { type: blob.type || 'image/jpeg' });
+          formData.append(`Images[${formIndex}].file`, file);
         } catch {
-          // If fetch fails, skip this image
-          console.warn('Failed to fetch existing image:', img.file);
+          console.warn('Failed to load existing image:', img.file);
           continue;
         }
       } else if (img.file instanceof File) {
-        formData.append(`Images[${i}].file`, img.file);
+        formData.append(`Images[${formIndex}].file`, img.file);
+      } else {
+        continue;
       }
 
-      formData.append(`Images[${i}].isMain`, img.isMain ? 'true' : 'false');
+      formData.append(`Images[${formIndex}].isMain`, img.isMain ? 'true' : 'false');
+      formIndex += 1;
+    }
+
+    if (formIndex === 0) {
+      toast.error('No images could be prepared for upload');
+      return false;
     }
 
     const response = await apiClient.post('/product-pictures/upsert', formData, {
