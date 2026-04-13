@@ -144,8 +144,6 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen">
-      
-
       {/* Hero Section */}
       <HeroSection />
 
@@ -202,136 +200,161 @@ export const HomePage: React.FC = () => {
         )}
 
         {/* Products Section */}
-        <section className="py-12" id="products">
-          <Container>
-            {isLoading ? (
-              <div className="space-y-12">
-                {[1, 2, 3].map((i) => (
-                  <div key={i}>
-                    <div className="h-10 bg-gray-300 rounded w-64 mb-8 animate-pulse" />
-                    <ProductGridSkeleton count={4} />
-                  </div>
-                ))}
+       <section className="py-12" id="products">
+  <Container>
+    {isLoading ? (
+      <div className="space-y-12">
+        {[1, 2, 3].map((i) => (
+          <div key={i}>
+            <div className="h-10 bg-gray-300 rounded w-64 mb-8 animate-pulse" />
+            <ProductGridSkeleton count={4} />
+          </div>
+        ))}
+      </div>
+    ) : error ? (
+      <div className="text-center py-20">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-red-800 mb-2">
+            Connection Error
+          </h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={refetch}
+            icon={<FiRefreshCw className="w-4 h-4" />}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    ) : homeData ? (
+      <div className="space-y-16">
+        {categoriesWithProducts.map((key, index) => {
+          const products = homeData[
+            key as keyof typeof homeData
+          ] as any[];
+          const category = CATEGORIES.find((c) =>
+            c.name
+              .toLowerCase()
+              .includes(
+                key
+                  .replace("propertysale", "property sale")
+                  .replace("propertyrent", "property rent"),
+              ),
+          );
+
+          // Skip if no products
+          if (!products || products.length === 0) return null;
+
+          return (
+            <motion.div
+              key={key}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+            >
+              {/* Section Header with Gradient Text */}
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#003049] to-[#F97316] bg-clip-text text-transparent">
+                  {category?.name}
+                </h2>
+                <Link
+                  href={`/category/${category?.id || ""}`}
+                  className="text-[#F97316] font-semibold hover:text-[#d97706] transition-colors flex items-center gap-2 group"
+                >
+                  View All
+                  <span className="group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
+                </Link>
               </div>
-            ) : error ? (
-              <div className="text-center py-20">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-                  <h3 className="text-lg font-semibold text-red-800 mb-2">
-                    Connection Error
-                  </h3>
-                  <p className="text-red-600 mb-4">{error}</p>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={refetch}
-                    icon={<FiRefreshCw className="w-4 h-4" />}
+
+              {/* Products Grid - 4 cards on lg, scrollable on smaller screens */}
+              <div className="relative">
+                {/* Mobile & Tablet: Horizontal Scroll */}
+                <div className="lg:hidden">
+                  <div 
+                    className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+                    style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                    }}
                   >
-                    Retry
-                  </Button>
+                    {products.slice(0, 8).map((product, idx) => (
+                      <motion.div
+                        key={product.ProductId}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex-shrink-0 snap-start"
+                        style={{
+                          width: 'calc(100% - 50%)', // Show current card + half of next
+                          maxWidth: '320px',
+                        }}
+                      >
+                        <ProductCard
+                          product={product}
+                          onFavoriteToggle={handleToggleFavorite}
+                          showDistance={dataSource === "location"}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : homeData ? (
-              <div className="space-y-16">
-                {categoriesWithProducts.map((key, index) => {
-                  const products = homeData[
-                    key as keyof typeof homeData
-                  ] as any[];
-                  const category = CATEGORIES.find((c) =>
-                    c.name
-                      .toLowerCase()
-                      .includes(
-                        key
-                          .replace("propertysale", "property sale")
-                          .replace("propertyrent", "property rent"),
-                      ),
-                  );
 
-                  // Skip if no products
-                  if (!products || products.length === 0) return null;
-
-                  return (
+                {/* Desktop: 4 Column Grid */}
+                <div className="hidden lg:grid lg:grid-cols-4 gap-6">
+                  {products.slice(0, 4).map((product, idx) => (
                     <motion.div
-                      key={key}
-                      initial={{ opacity: 0, y: 30 }}
+                      key={product.ProductId}
+                      initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: idx * 0.05 }}
                     >
-                      {/* Section Header with Gradient Text */}
-                      <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#003049] to-[#F97316] bg-clip-text text-transparent">
-                          {category?.name}
-                        </h2>
-                        <Link
-                          href={`/category/${category?.id || ""}`}
-                          className="text-[#F97316] font-semibold hover:text-[#d97706] transition-colors flex items-center gap-2 group"
-                        >
-                          View All
-                          <span className="group-hover:translate-x-1 transition-transform">
-                            →
-                          </span>
-                        </Link>
-                      </div>
-
-                      {/* Products Grid */}
-
-                      <div className="relative">
-
-                      {/* Products Grid - Horizontal scroll on mobile, grid on desktop */}
-                      <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6 sm:overflow-visible sm:pb-0">
-                        {products.slice(0, 4).map((product, idx) => (
-                          <motion.div
-                            key={product.ProductId}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.05 }}
-                            className="min-w-[260px] sm:min-w-0 flex-shrink-0 sm:flex-shrink"
-                          >
-                            <ProductCard
-                              product={product}
-                              onFavoriteToggle={handleToggleFavorite}
-                              showDistance={dataSource === "location"}
-                            />
-                          </motion.div>
-                        ))}
-                      </div>
-
-                      {/* Right Shadow Indicator (mobile only) */}
-                      {/* <div className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent" /> */}
-                      </div>
-
+                      <ProductCard
+                        product={product}
+                        onFavoriteToggle={handleToggleFavorite}
+                        showDistance={dataSource === "location"}
+                      />
                     </motion.div>
-                  );
-                })}
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
 
-                {categoriesWithProducts.length === 0 && (
-                  <div className="text-center py-20">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                        No Products Found
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        {dataSource === "location"
-                          ? "Try adjusting your location or browse by city."
-                          : dataSource === "city"
-                            ? "No products found in your city. Try browsing by location or other cities."
-                            : "No products available at the moment. Please check back later."}
-                      </p>
-                      <Button variant="primary" size="md" onClick={refetch}>
-                        Refresh
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-20">
-                <p className="text-gray-500 text-lg">No data available.</p>
-              </div>
-            )}
-          </Container>
-        </section>
+        {categoriesWithProducts.length === 0 && (
+          <div className="text-center py-20">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                No Products Found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {dataSource === "location"
+                  ? "Try adjusting your location or browse by city."
+                  : dataSource === "city"
+                    ? "No products found in your city. Try browsing by location or other cities."
+                    : "No products available at the moment. Please check back later."}
+              </p>
+              <Button variant="primary" size="md" onClick={refetch}>
+                Refresh
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    ) : (
+      <div className="text-center py-20">
+        <p className="text-gray-500 text-lg">No data available.</p>
+      </div>
+    )}
+  </Container>
+</section>
       </main>
 
       <Container className="pb-8">

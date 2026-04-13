@@ -502,6 +502,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {user?.imageurl ? (
                         <img
                           src={getImageUrl(user.imageurl)}
+                          
                           alt={user.name || "User"}
                           className="w-12 h-12 rounded-full object-cover shrink-0"
                         />

@@ -29,6 +29,7 @@ import { ROUTES } from '@/src/utils/constants';
 import { toast } from 'sonner';
 import { cn } from '@/src/utils/cn';
 import { formatDateTimePK, formatTimePK } from '@/src/utils/datePk';
+import { getImageUrl } from '@/src/utils/image';
 
 const QUICK_REPLIES = [
   'Assalam o alaikum',
@@ -292,7 +293,7 @@ export default function ChatDashboardClient() {
 
   return (
     <div className="flex h-screen flex-col bgnt-to-br from-primary via-primary/95 to-primary/90">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col overflow-hidden rounded-t-3xl shadow-2xl">
+      <div className="mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-t-3xl shadow-2xl">
         <div className="flex min-h-0 flex-1 flex-col md:flex-row bg-white">
           {/* ============================================
               SIDEBAR - CONVERSATIONS LIST
@@ -421,7 +422,7 @@ export default function ChatDashboardClient() {
                             <div className="h-12 w-12 overflow-hidden rounded-full bg-gradient-to-br from-primary/20 to-accent/20 ring-2 ring-white">
                               {peerAvatar(c, myId) ? (
                                 <Image
-                                  src={getChatImageUrl(peerAvatar(c, myId))}
+                                  src={getImageUrl(peerAvatar(c, myId))}
                                   alt=""
                                   width={48}
                                   height={48}
@@ -471,7 +472,7 @@ export default function ChatDashboardClient() {
                                 {rowTyping ? 'typing...' : chatPreview(c.lastMessageText)}
                               </p>
                               {effectiveUnseen > 0 && (
-                                <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-accent to-accent-dark px-2 text-xs font-bold text-white shadow-lg">
+                                <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-accent px-2 text-xs font-bold text-white shadow-lg">
                                   {effectiveUnseen > 99 ? '99+' : effectiveUnseen}
                                 </span>
                               )}
@@ -528,7 +529,7 @@ export default function ChatDashboardClient() {
                       <div className="h-12 w-12 overflow-hidden rounded-full bg-[#003049]ring-2 ring-white/30">
                         {(active ? peerAvatar(active, myId) : null) ? (
                           <Image
-                            src={getChatImageUrl(peerAvatar(active!, myId))}
+                            src={getImageUrl(peerAvatar(active!, myId))}
                             alt=""
                             width={48}
                             height={48}
@@ -639,7 +640,7 @@ export default function ChatDashboardClient() {
 
                     return (
                       <React.Fragment key={m.id}>
-                        {showDate && (
+                        {/* {showDate && (
                           <div className="flex justify-center py-3">
                             <div className="rounded-full bg-white/70 px-4 py-1.5 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur-sm">
                               {new Date(m.sentAt).toLocaleDateString('en-US', {
@@ -649,7 +650,7 @@ export default function ChatDashboardClient() {
                               })}
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         <div className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
                           <div
@@ -740,7 +741,7 @@ export default function ChatDashboardClient() {
                       {(active?.productImageUrl || draftProductImage) && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={getChatImageUrl(active?.productImageUrl || draftProductImage)}
+                          src={getImageUrl(active?.productImageUrl || draftProductImage)}
                           alt=""
                           className="h-full w-full object-cover"
                         />
@@ -762,21 +763,23 @@ export default function ChatDashboardClient() {
                     </Link>
                   </div>
 
-                  {/* Quick Replies */}
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {QUICK_REPLIES.map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => {
-                          if (activeId) void sendText(activeId, q, 0);
-                        }}
-                        className="rounded-full border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 hover:border-primary active:scale-95"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
+              {/* Quick Replies - Only show when chat is empty */}
+{messages.length === 0 && (
+  <div className="mb-3 flex flex-wrap gap-2">
+    {QUICK_REPLIES.map((q) => (
+      <button
+        key={q}
+        type="button"
+        onClick={() => {
+          if (activeId) void sendText(activeId, q, 0);
+        }}
+        className="rounded-full border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 hover:border-primary active:scale-95"
+      >
+        {q}
+      </button>
+    ))}
+  </div>
+)}
 
                   {/* Input Controls */}
                   <div className="flex items-end gap-2">
@@ -789,7 +792,7 @@ export default function ChatDashboardClient() {
                     />
 
                     {/* Emoji Button */}
-                    <div className="relative">
+                    {/* <div className="relative">
                       <button
                         type="button"
                         className="rounded-full p-2.5 text-gray-600 transition hover:bg-gray-100"
@@ -821,7 +824,7 @@ export default function ChatDashboardClient() {
                           </div>
                         </>
                       )}
-                    </div>
+                    </div> */}
 
                     {/* Image Button */}
                     <button

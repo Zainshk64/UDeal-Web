@@ -103,11 +103,11 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ className }) => {
       label: "My buyer requests",
       href: ROUTES.BUYERS_MY_REQUESTS,
     },
-    {
-      icon: FiSettings,
-      label: "Settings",
-      href: "/settings",
-    },
+    // {
+    //   icon: FiSettings,
+    //   label: "Settings",
+    //   href: "/settings",
+    // },
   ];
 
   return (

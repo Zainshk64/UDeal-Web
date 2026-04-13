@@ -165,19 +165,19 @@ export const CTASection: React.FC = () => {
               className="flex items-center gap-6 mt-8 justify-center lg:justify-start"
             >
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">10K+</p>
+                <p className="text-2xl font-bold text-white">100K+</p>
                 <p className="text-xs text-white/60">Downloads</p>
               </div>
               <div className="w-px h-10 bg-white/20" />
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">4.5★</p>
+                <p className="text-2xl font-bold text-white">4.2★</p>
                 <p className="text-xs text-white/60">Rating</p>
               </div>
-              <div className="w-px h-10 bg-white/20" />
+              {/* <div className="w-px h-10 bg-white/20" />
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">5K+</p>
                 <p className="text-xs text-white/60">Active Users</p>
-              </div>
+              </div> */}
             </motion.div>
           </motion.div>
 
