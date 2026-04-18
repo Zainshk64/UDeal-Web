@@ -96,7 +96,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     setIsMobileLoggingOut(true);
     try {
       await logout();
+      import("@/src/utils/storage").then(({ clearAuthSession }) => {
+        clearAuthSession(); // This calls removeAuthTokens() + removeUserData()
+      });
+      window.dispatchEvent(new Event('udealzone-auth-storage-changed'));
       refreshAuth();
+
+
       setIsMenuOpen(false);
       const protectedRoutes = [
         ROUTES.MY_ADS,
@@ -236,9 +242,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onSearch={(q) => {
                   const clean = q.trim();
                   if (!clean) return;
-                  router.push(
-                    `/search?q=${encodeURIComponent(clean)}`,
-                  );
+                  router.push(`/search?q=${encodeURIComponent(clean)}`);
                 }}
               />
             )}
@@ -502,7 +506,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {user?.imageurl ? (
                         <img
                           src={getImageUrl(user.imageurl)}
-                          
                           alt={user.name || "User"}
                           className="w-12 h-12 rounded-full object-cover shrink-0"
                         />

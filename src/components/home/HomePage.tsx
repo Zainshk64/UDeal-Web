@@ -24,9 +24,25 @@ import { usePageAds } from "@/src/hooks/usePageAds";
 
 export const HomePage: React.FC = () => {
   const { ads } = usePageAds("Home Page");
-  const { isAuthenticated, user } = useAuth();
-  const { homeData, isLoading, error, dataSource, switchDataSource, refetch } =
-    useHomeData();
+   const { isAuthenticated, user } = useAuth();
+  const { 
+    homeData, 
+    isLoading, 
+    error, 
+    dataSource, 
+    switchDataSource, 
+    refetch,
+    isAuthenticated: hookAuthState 
+  } = useHomeData();
+
+      // Safety: If auth context shows not authenticated but hook shows authenticated
+  // Force reset to default
+  useEffect(() => {
+    if (!isAuthenticated && hookAuthState) {
+      switchDataSource('default');
+    }
+  }, [isAuthenticated, hookAuthState, switchDataSource]);
+
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{
     lat: number;

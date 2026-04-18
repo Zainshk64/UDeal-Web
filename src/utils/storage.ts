@@ -186,10 +186,18 @@ export const isAuthenticated = (): boolean => {
   const token = getStoredToken('access');
   return !!token;
 };
+// In storage.ts
 
 export const clearAuthSession = (): void => {
-  removeAuthTokens();
-  removeUserData();
-  removeFromStorage('CITIES_CACHE');
-  clearAllStorage();
+  if (typeof window === 'undefined') return;
+  try {
+    removeFromStorage('ACCESS_TOKEN');
+    removeFromStorage('REFRESH_TOKEN');
+    removeFromStorage('USER_DATA');
+    // Don't clear cities cache - it's not sensitive
+    emitStorageUpdate(); // Emit event for listeners
+    console.log('Auth session cleared');
+  } catch (error) {
+    console.error('Error clearing auth session:', error);
+  }
 };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getHomeData, getHomeDataByCity, getHomeDataByLocation } from '@/src/api/services/HomeApi';
-import { getUserData, isAuthenticated } from '@/src/utils/storage';
+import { getUserData, isAuthenticated, getFromStorage } from '@/src/utils/storage';
 import { toast } from 'sonner';
 
 export type HomeDataSource = 'default' | 'city' | 'location';
@@ -17,6 +17,7 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<HomeDataSource>(initialSource);
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [authState, setAuthState] = useState<boolean>(isAuthenticated());
 
   // Fetch data based on source
   const fetchData = useCallback(async (source: HomeDataSource, coords?: { lat: number; lng: number }) => {
@@ -27,25 +28,34 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
       let data = null;
       const userData = getUserData();
       const userId = userData?.userId;
+      const hasAuth = isAuthenticated();
+
+      // Check if user is actually authenticated
+      // Don't use city data if user is not authenticated
+      if (source === 'city' && !hasAuth) {
+        source = 'default';
+        setDataSource('default');
+      }
 
       switch (source) {
         case 'default':
           data = await getHomeData();
           break;
         case 'city':
-          if (userData?.cityId && userId) {
+          // Only use city data if authenticated AND has cityId
+          if (hasAuth && userData?.cityId && userId) {
             data = await getHomeDataByCity(userData.cityId, userId);
           } else {
-            // Fallback to default if no city or user ID
+            // Fallback to default if no auth or city
             data = await getHomeData();
             setDataSource('default');
           }
           break;
         case 'location':
-          if (coords && userId) {
+          if (coords && userId && hasAuth) {
             data = await getHomeDataByLocation(coords.lng, coords.lat, userId);
           } else if (coords) {
-            // If no user ID but have location, still fetch without user context
+            // If no auth but have location, still fetch without user context
             data = await getHomeDataByLocation(coords.lng, coords.lat);
           } else {
             // Fallback to default if no coordinates
@@ -73,15 +83,56 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
         description: 'Failed to load products. Please check your internet connection.',
       });
       // Fallback to default data
-      const fallbackData = await getHomeData();
-      if (fallbackData) {
-        setHomeData(fallbackData);
-        setDataSource('default');
+      try {
+        const fallbackData = await getHomeData();
+        if (fallbackData) {
+          setHomeData(fallbackData);
+          setDataSource('default');
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback fetch failed:', fallbackErr);
       }
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const hasAuth = isAuthenticated();
+      const prevAuthState = authState;
+
+      // If auth state changed
+      if (prevAuthState !== hasAuth) {
+        setAuthState(hasAuth);
+
+        // If user logged out, reset to default
+        if (prevAuthState && !hasAuth) {
+          console.log('User logged out - switching to default');
+          setDataSource('default');
+          setLocationCoords(null);
+          fetchData('default');
+        }
+        // If user logged in, switch to city if available
+        else if (!prevAuthState && hasAuth) {
+          const userData = getUserData();
+          console.log('User logged in - switching to city', userData?.cityId);
+          if (userData?.cityId) {
+            setDataSource('city');
+            fetchData('city');
+          }
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('udealzone-auth-storage-changed', handleStorageChange);
+      return () => {
+        window.removeEventListener('udealzone-auth-storage-changed', handleStorageChange);
+      };
+    }
+  }, [authState, fetchData]);
 
   // Initial load
   useEffect(() => {
@@ -92,10 +143,14 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
       // Determine initial data source
       let initialSourceToUse = initialSource;
       
+      // Only use city if authenticated
       if (hasAuth && userData?.cityId) {
         initialSourceToUse = 'city';
+      } else {
+        initialSourceToUse = 'default';
       }
       
+      setAuthState(hasAuth);
       await fetchData(initialSourceToUse);
     };
 
@@ -104,6 +159,16 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
 
   // Switch data source
   const switchDataSource = useCallback(async (newSource: HomeDataSource, coords?: { lat: number; lng: number }) => {
+    const hasAuth = isAuthenticated();
+
+    // Prevent switching to city if not authenticated
+    if (newSource === 'city' && !hasAuth) {
+      console.warn('Cannot switch to city data - user not authenticated');
+      setDataSource('default');
+      await fetchData('default');
+      return;
+    }
+
     if (newSource === 'location' && coords) {
       setLocationCoords(coords);
     }
@@ -119,5 +184,6 @@ export const useHomeData = ({ initialSource = 'default' }: UseHomeDataOptions = 
     locationCoords,
     switchDataSource,
     refetch: () => fetchData(dataSource, locationCoords),
+    isAuthenticated: authState,
   };
 };
