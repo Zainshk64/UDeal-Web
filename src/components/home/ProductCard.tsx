@@ -123,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.ProdcutTitle}
           </h3>
           <h3 className=" text-black/60 line-clamp-2 text-sm">
-            {product.ProductDescription.slice(0, 30)}...
+            {product.ProductDescription?.slice(0, 30)}...
           </h3>
 
           {/* Price */}
