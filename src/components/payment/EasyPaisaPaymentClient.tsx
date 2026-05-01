@@ -55,7 +55,8 @@ export default function EasyPaisaPaymentClient() {
         setIsProcessing(false);
       } else {
         toast.success(result.message || 'Payment request sent successfully');
-        router.push(`/payment/status?method=easypaisa&status=pending&orderId=${result.data?.orderId || ''}`);
+ router.push(`/paymentdone?status=success&method=easypaisa&amount=${price || ''}`);
+
       }
     } catch (error: any) {
       toast.error(error.message || 'Payment failed');

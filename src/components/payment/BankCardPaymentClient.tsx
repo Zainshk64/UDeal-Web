@@ -34,7 +34,6 @@ type PaymentState =
   | 'success'
   | 'failed';
 
-// Bank return URLs (production) + legacy path fragments (sandbox / RN parity)
 const isBankSuccess = (url: string) => {
   const lower = url.toLowerCase();
   const paymentDoneOk =
@@ -89,7 +88,6 @@ export default function BankCardPaymentClient() {
   const bankPopupRef = useRef<Window | null>(null);
   const isHandledRef = useRef(false);
   const userCancelledRef = useRef(false);
-  const ipnPollBusyRef = useRef(false);
   const completeHandlerRef = useRef<(oid: string) => Promise<void>>(async () => {});
   const failHandlerRef = useRef<() => void>(() => {});
 
@@ -130,9 +128,6 @@ export default function BankCardPaymentClient() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [paymentState]);
 
-  // ══════════════════════════════════════════════
-  // STEP 1 + 2: Generate Token → Load SSO HTML → top-level popup (not iframe)
-  // ══════════════════════════════════════════════
   const startPayment = async () => {
     if (!planId || !planPrice) {
       toast.error('Plan details missing');
@@ -178,7 +173,7 @@ export default function BankCardPaymentClient() {
       setSsoHtml(html);
       setPaymentState('webview');
       setCheckoutUiBusy(false);
-      console.log('✅ Bank checkout opened in popup (top-level; avoids X-Frame-Options)');
+      console.log('✅ Bank checkout opened in popup');
     } catch (error: any) {
       console.error('❌ Payment start failed:', error?.message);
       setPaymentState('failed');
@@ -206,7 +201,8 @@ export default function BankCardPaymentClient() {
   };
 
   // ══════════════════════════════════════════════
-  // STEP 4 + 5: IPN → Subscription (Sequential)
+  // STEP 4 + 5: IPN → Subscription
+  // Called ONLY after bank confirms success (popup URL match or popup closed after success)
   // ══════════════════════════════════════════════
   const handleBankPaymentCompleted = async (currentOrderId?: string) => {
     const orderIdToUse = currentOrderId || orderId;
@@ -224,24 +220,34 @@ export default function BankCardPaymentClient() {
     }
 
     isHandledRef.current = true;
+
     try {
       bankPopupRef.current?.close();
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     bankPopupRef.current = null;
     setSsoHtml(null);
 
     try {
       // ── STEP 4: Call IPN Listener ──
+      // Wait 3 seconds first so the bank's redirect has time to hit the backend
       setPaymentState('calling_ipn');
       setStatusMessage('Verifying payment with bank...');
+      console.log('⏳ Waiting 3s for bank redirect to settle...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       console.log('📞 Step 4: Calling IPN for order:', orderIdToUse);
+      const ipnResult = await callAlfalahIpnListener(orderIdToUse, 5, 4000);
 
-      const ipnResult = await callAlfalahIpnListener(orderIdToUse, 3, 5000);
+      // Fix: responseCode can be boolean true OR string "00" depending on backend version
+      const ipnSuccess =
+        ipnResult.responseCode === true ||
+        ipnResult.responseCode === ('true' as any) ||
+        // ipnResult.responseCode === '00' ||
+        (typeof ipnResult.responseCode === 'string' &&
+          ipnResult.responseCode === '0');
 
-      if (!ipnResult.responseCode) {
-        console.error('❌ IPN failed:', ipnResult.responseText);
+      if (!ipnSuccess) {
+        console.error('❌ IPN failed after retries:', ipnResult.responseText);
         setPaymentState('failed');
         setResultInfo({
           status: 'Failed',
@@ -273,7 +279,9 @@ export default function BankCardPaymentClient() {
           amount: planPrice,
           subscriptionId: subResult.subscriptionId,
         });
+        
         toast.success('Payment Successful! 🎉');
+        router.push(`/paymentdone?status=success&method=bank&orderId=${subResult.orderId || orderIdToUse}&amount=${planPrice}`);
       } else {
         console.error('❌ Subscription failed:', subResult.returnText);
         setPaymentState('failed');
@@ -284,6 +292,8 @@ export default function BankCardPaymentClient() {
           amount: planPrice,
         });
         toast.error('Payment declined by bank');
+        router.push(`/paymentdone?status=failed&method=bank&orderId=${orderIdToUse}&amount=${planPrice}`);
+
       }
     } catch (error: any) {
       console.error('❌ Post-payment error:', error?.message);
@@ -295,18 +305,15 @@ export default function BankCardPaymentClient() {
         amount: planPrice,
       });
       toast.error('Payment processing failed');
+        router.push(`/paymentdone?status=failed&method=bank&orderId=${orderIdToUse || ''}&amount=${planPrice}`);
+
     }
   };
 
   const handleBankPaymentFailed = () => {
     if (isHandledRef.current) return;
-
     isHandledRef.current = true;
-    try {
-      bankPopupRef.current?.close();
-    } catch {
-      /* ignore */
-    }
+    try { bankPopupRef.current?.close(); } catch { /* ignore */ }
     bankPopupRef.current = null;
     setSsoHtml(null);
     setPaymentState('failed');
@@ -330,11 +337,7 @@ export default function BankCardPaymentClient() {
       );
       if (!leave) return;
       userCancelledRef.current = true;
-      try {
-        bankPopupRef.current?.close();
-      } catch {
-        /* ignore */
-      }
+      try { bankPopupRef.current?.close(); } catch { /* ignore */ }
       bankPopupRef.current = null;
     }
 
@@ -348,7 +351,7 @@ export default function BankCardPaymentClient() {
 
   const handleDone = () => {
     if (paymentState === 'success') {
-      router.push('/my-ads');
+      router.push('/my-ads/my-packages');
     } else {
       router.back();
     }
@@ -372,72 +375,82 @@ export default function BankCardPaymentClient() {
     handleBankPaymentFailed();
   };
 
-  // Poll popup URL when it returns to same origin as this app (production on udealzone.com).
+  // ══════════════════════════════════════════════
+  // POPUP WATCHER — URL-based detection only
+  // Fires ONLY when same-origin URL is readable (production on udealzone.com)
+  // No IPN polling here — IPN is called ONCE after success URL detected
+  // ══════════════════════════════════════════════
   useEffect(() => {
     if (paymentState !== 'webview' || !orderId) return;
     const oid = orderId;
+
     const tick = window.setInterval(() => {
-      if (isHandledRef.current || userCancelledRef.current) return;
+      if (isHandledRef.current || userCancelledRef.current) {
+        window.clearInterval(tick);
+        return;
+      }
+
       const w = bankPopupRef.current;
-      if (!w) return;
+      if (!w) {
+        window.clearInterval(tick);
+        return;
+      }
+
+      // Popup was closed by user without us detecting a result URL
       if (w.closed) {
         window.clearInterval(tick);
         if (!userCancelledRef.current && !isHandledRef.current) {
+          // Popup closed — could be success or cancel; try IPN to verify
+          console.log('🔍 Popup closed unexpectedly — attempting IPN verify...');
           void completeHandlerRef.current(oid);
         }
         return;
       }
+
+      // Try to read URL (only works when same-origin)
       try {
         const url = w.location.href;
+        if (!url || url === 'about:blank') return;
+
         if (isBankSuccess(url)) {
+          console.log('✅ Success URL detected:', url);
           window.clearInterval(tick);
           w.close();
           void completeHandlerRef.current(oid);
         } else if (isBankFailure(url)) {
+          console.log('❌ Failure URL detected:', url);
           window.clearInterval(tick);
           w.close();
           failHandlerRef.current();
         }
+        // else: still on bank domain (cross-origin) — keep polling silently
       } catch {
-        /* cross-origin while on bank host */
+        // Cross-origin — bank page still loading, silently ignore
       }
-    }, 600);
+    }, 800);
+
     return () => window.clearInterval(tick);
   }, [paymentState, orderId]);
 
-  // Localhost / cross-origin return: poll IPN while checkout popup is open (same as verifying after RN success).
-  useEffect(() => {
-    if (paymentState !== 'webview' || !orderId) return;
-    const oid = orderId;
-    const tick = window.setInterval(async () => {
-      if (isHandledRef.current || userCancelledRef.current) return;
-      const w = bankPopupRef.current;
-      if (!w || w.closed) return;
-      if (ipnPollBusyRef.current) return;
-      ipnPollBusyRef.current = true;
-      try {
-        const r = await callAlfalahIpnListener(oid, 1, 0);
-        if (r.responseCode && !isHandledRef.current) {
-          w.close();
-          await completeHandlerRef.current(oid);
-        }
-      } finally {
-        ipnPollBusyRef.current = false;
-      }
-    }, 5000);
-    return () => window.clearInterval(tick);
-  }, [paymentState, orderId]);
+  // ══════════════════════════════════════════════
+  // NOTE: Removed the aggressive IPN background poll that was
+  // firing every 5s while checkout was open. That caused:
+  //   - 400 Bad Request spam (bank hasn't processed yet)
+  //   - Race condition where IPN reported "Order Not Found"
+  //   - Duplicate handleBankPaymentCompleted calls
+  // IPN is now called exactly ONCE, after success URL is detected,
+  // with a 3s settle delay before the first attempt.
+  // ══════════════════════════════════════════════
 
   const isLoading = paymentState === 'generating_token' || paymentState === 'loading_sso';
   const isProcessing = paymentState === 'calling_ipn' || paymentState === 'activating_plan';
 
   // ═══════════════════════════════════════
-  // RENDER: WebView (iframe)
+  // RENDER: WebView state
   // ═══════════════════════════════════════
   if (paymentState === 'webview' && ssoHtml) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-white">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 bg-primary px-4 py-4 shadow-lg">
           <button
             onClick={handleCancel}
@@ -455,7 +468,6 @@ export default function BankCardPaymentClient() {
           <div className="w-10" />
         </div>
 
-        {/* Loading Indicator */}
         {checkoutUiBusy && (
           <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
             <div className="rounded-2xl bg-white px-6 py-4 shadow-2xl">
@@ -472,8 +484,9 @@ export default function BankCardPaymentClient() {
           <div>
             <h3 className="text-lg font-bold text-gray-900">Bank Alfalah checkout</h3>
             <p className="mt-2 max-w-md text-sm text-gray-600">
-              Complete payment in the popup window. This page stays open to confirm your payment and
-              activate your plan. Do not close it until you see success or failure here.
+              Complete payment in the popup window. This page stays open to confirm your
+              payment and activate your plan. Do not close it until you see success or
+              failure here.
             </p>
           </div>
           {orderId && (
@@ -493,9 +506,7 @@ export default function BankCardPaymentClient() {
         <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 text-center text-xs text-gray-600">
           <div className="flex items-center justify-center gap-2">
             <FiShield className="h-4 w-4 text-green-600" />
-            <span>
-              Secured by Bank Alfalah | PCI DSS Compliant | 3D Secure
-            </span>
+            <span>Secured by Bank Alfalah | PCI DSS Compliant | 3D Secure</span>
           </div>
         </div>
       </div>
@@ -503,7 +514,7 @@ export default function BankCardPaymentClient() {
   }
 
   // ═══════════════════════════════════════
-  // RENDER: Processing (IPN / Subscription)
+  // RENDER: Processing
   // ═══════════════════════════════════════
   if (isProcessing) {
     return (
@@ -528,7 +539,6 @@ export default function BankCardPaymentClient() {
               {statusMessage || 'Please do not close this window.'}
             </p>
 
-            {/* Progress Steps */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
@@ -573,16 +583,14 @@ export default function BankCardPaymentClient() {
   }
 
   // ═══════════════════════════════════════
-  // RENDER: Result (Success / Failed)
+  // RENDER: Result
   // ═══════════════════════════════════════
   if (paymentState === 'success' || paymentState === 'failed') {
     const isSuccess = paymentState === 'success';
-
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5 p-4">
         <Container className="max-w-lg">
           <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-2xl">
-            {/* Icon */}
             <div className="mb-6 flex justify-center">
               <div
                 className={cn(
@@ -598,7 +606,6 @@ export default function BankCardPaymentClient() {
               </div>
             </div>
 
-            {/* Title */}
             <h2
               className={cn(
                 'mb-2 text-center text-3xl font-bold',
@@ -608,12 +615,10 @@ export default function BankCardPaymentClient() {
               {isSuccess ? 'Payment Successful!' : 'Payment Failed'}
             </h2>
 
-            {/* Message */}
-            <p className="mb-6 text-center text-gray-600 leading-relaxed">
+            <p className="mb-6 text-center leading-relaxed text-gray-600">
               {resultInfo?.message || ''}
             </p>
 
-            {/* Details */}
             {(resultInfo?.orderId || resultInfo?.amount) && (
               <div className="mb-6 space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 {resultInfo?.orderId && (
@@ -643,15 +648,12 @@ export default function BankCardPaymentClient() {
               </div>
             )}
 
-            {/* Actions */}
             <div className="space-y-3">
               <button
                 onClick={handleDone}
                 className={cn(
                   'flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-95',
-                  isSuccess
-                    ? 'bg-gradient-to-r from-green-500 to-green-600'
-                    : 'bg-gradient-to-r from-primary to-primary-dark'
+                  isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-primary'
                 )}
               >
                 {isSuccess ? 'View My Packages' : 'Go Back'}
@@ -660,7 +662,7 @@ export default function BankCardPaymentClient() {
               {!isSuccess && (
                 <button
                   onClick={handleRetry}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-accent-dark py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-95"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-95"
                 >
                   Try Again
                 </button>
@@ -673,7 +675,7 @@ export default function BankCardPaymentClient() {
   }
 
   // ═══════════════════════════════════════
-  // RENDER: Idle Screen (Initial)
+  // RENDER: Idle
   // ═══════════════════════════════════════
   return (
     <main className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-accent/5 py-28">
@@ -688,7 +690,6 @@ export default function BankCardPaymentClient() {
         </button>
 
         <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
-          {/* Header */}
           <div className="bg-primary p-8 text-white">
             <div className="flex items-center gap-4">
               <div className="rounded-2xl bg-white/20 p-4 backdrop-blur-sm">
@@ -710,23 +711,16 @@ export default function BankCardPaymentClient() {
             )}
           </div>
 
-          {/* Content */}
           <div className="p-8">
-            {/* Card Visual */}
             <div className="mb-8 flex justify-center">
               <div
                 className="relative h-52 w-full max-w-sm rounded-2xl p-6 shadow-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, #003049 0%, #004d6d 100%)',
-                }}
+                style={{ background: 'linear-gradient(135deg, #003049 0%, #004d6d 100%)' }}
               >
-                {/* Chip */}
                 <div className="mb-4 flex items-start justify-between">
                   <div className="h-10 w-12 rounded bg-gradient-to-br from-yellow-300 to-yellow-500" />
                   <span className="text-xs text-white/60">CREDIT / DEBIT</span>
                 </div>
-
-                {/* Card Number Dots */}
                 <div className="mb-6 flex justify-between px-2">
                   {[1, 2, 3, 4].map((group) => (
                     <div key={group} className="flex gap-1">
@@ -736,8 +730,6 @@ export default function BankCardPaymentClient() {
                     </div>
                   ))}
                 </div>
-
-                {/* Card Holder & Logo */}
                 <div className="flex items-end justify-between">
                   <span className="text-sm text-white/80">CARD HOLDER</span>
                   <div className="flex">
@@ -748,49 +740,28 @@ export default function BankCardPaymentClient() {
               </div>
             </div>
 
-            {/* Info Section */}
             <div className="mb-8 rounded-2xl border-2 border-primary/20 bg-primary/5 p-6">
               <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
                 <FiAlertCircle className="h-5 w-5 text-accent" />
                 What happens next?
               </h3>
               <ol className="space-y-3">
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    1
-                  </div>
-                  <p className="text-gray-700">
-                    You'll be redirected to Bank Alfalah's secure payment gateway
-                  </p>
-                </li>
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    2
-                  </div>
-                  <p className="text-gray-700">
-                    Enter your card details (Visa/Mastercard/UnionPay accepted)
-                  </p>
-                </li>
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    3
-                  </div>
-                  <p className="text-gray-700">
-                    Complete 3D Secure verification (OTP from your bank)
-                  </p>
-                </li>
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    4
-                  </div>
-                  <p className="text-gray-700">
-                    Your package will be activated automatically upon successful payment
-                  </p>
-                </li>
+                {[
+                  "You'll be redirected to Bank Alfalah's secure payment gateway",
+                  'Enter your card details (Visa/Mastercard/UnionPay accepted)',
+                  'Complete 3D Secure verification (OTP from your bank)',
+                  'Your package will be activated automatically upon successful payment',
+                ].map((text, i) => (
+                  <li key={i} className="flex gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                      {i + 1}
+                    </div>
+                    <p className="text-gray-700">{text}</p>
+                  </li>
+                ))}
               </ol>
             </div>
 
-            {/* Security Badges */}
             <div className="mb-8 grid grid-cols-3 gap-4">
               {[
                 { icon: FiLock, label: 'SSL Secure', color: 'text-blue-600' },
@@ -806,7 +777,6 @@ export default function BankCardPaymentClient() {
               ))}
             </div>
 
-            {/* Loading State */}
             {isLoading && (
               <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex items-center gap-3">
@@ -823,12 +793,11 @@ export default function BankCardPaymentClient() {
               </div>
             )}
 
-            {/* Pay Button */}
             <button
               onClick={startPayment}
               disabled={isLoading}
               className={cn(
-                'flex w-full items-center cursor-pointer justify-center gap-3 rounded-2xl py-5 text-lg font-bold text-white shadow-xl transition-all',
+                'flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl py-5 text-lg font-bold text-white shadow-xl transition-all',
                 isLoading
                   ? 'cursor-not-allowed bg-gray-300'
                   : 'bg-accent hover:shadow-2xl active:scale-95'
@@ -836,7 +805,7 @@ export default function BankCardPaymentClient() {
             >
               {isLoading ? (
                 <>
-                  <div className="h-6 w-6 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-white border-t-transparent" />
                   <span>Processing...</span>
                 </>
               ) : (
@@ -847,18 +816,16 @@ export default function BankCardPaymentClient() {
               )}
             </button>
 
-            {/* Disclaimer */}
             <p className="mt-6 text-center text-xs leading-relaxed text-gray-500">
               By proceeding, you agree to the payment terms.
               <br />
-              Card details are handled securely by Bank Alfalah.
+              Card details are handled securely by Bank Alfalah.{""}
               <br />
               UDealZone never stores your card information.
             </p>
           </div>
         </div>
 
-        {/* Additional Security Info */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             🔒 Protected by 256-bit SSL encryption | PCI DSS Level 1 Certified

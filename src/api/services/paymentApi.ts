@@ -42,7 +42,7 @@ export const initiateEasyPaisa = async (
     const payload = {
       orderId,
       mobileAccountNo: mobileNumber,
-      memberId,
+      // memberId,
       adPlanId,
     };
 
