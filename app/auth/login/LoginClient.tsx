@@ -7,10 +7,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiSmartphone } from 'react-icons/fi';
 import { login, signInWithGoogleWeb } from '@/src/api/services/AuthApi';
-import { ROUTES } from '@/src/utils/constants';
 import { isEmailIdentifier, isPhoneIdentifier } from '@/src/api/services/AuthApi';
 import { useAuth } from '@/src/context/AuthContext';
 import { toast } from 'sonner';
+
+const AUTH_ROUTES = {
+  HOME: '/',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  SIGNUP: '/auth/signup',
+} as const;
 
 export default function LoginClient() {
   const router = useRouter();
@@ -56,7 +61,7 @@ export default function LoginClient() {
     try {
       const success = await login(identifier, password);
       if (success) {
-        router.push(ROUTES.HOME);
+        router.push(AUTH_ROUTES.HOME);
         refreshAuth(); // Refresh auth state after successful login
       }
     } finally {
@@ -69,7 +74,7 @@ export default function LoginClient() {
   async function handleGoogleSignIn() {
     const result = await signInWithGoogleWeb();
     if (result) {
-      router.push(ROUTES.HOME); // or wherever you redirect after login
+      router.push(AUTH_ROUTES.HOME); // or wherever you redirect after login
     }
   }
 
@@ -167,7 +172,7 @@ export default function LoginClient() {
             {/* Forgot Password Link */}
             <div className="text-right">
               <Link
-                href={ROUTES.FORGOT_PASSWORD}
+                href={AUTH_ROUTES.FORGOT_PASSWORD}
                 className="text-[#F97316] hover:text-[#d97706] text-sm font-medium transition-colors"
               >
                 Forgot Password?
@@ -212,7 +217,7 @@ export default function LoginClient() {
           <p className="text-center mt-3 text-gray-600">
             Don't have an account?{' '}
             <Link
-              href={ROUTES.SIGNUP}
+              href={AUTH_ROUTES.SIGNUP}
               className="text-[#F97316] hover:text-[#d97706] font-semibold transition-colors"
             >
               Sign Up
