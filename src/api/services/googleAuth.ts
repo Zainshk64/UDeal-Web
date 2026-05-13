@@ -1,7 +1,7 @@
 // ============================================
 // GOOGLE AUTH — CLEAN SINGLE FUNCTION
 // No Firebase needed. Uses Google Identity Services (GIS) directly.
-// Only calls: POST /api/auth/googleauth
+// Only calls: POST /auth/googleauth
 // ============================================
 
 
@@ -117,7 +117,7 @@ function promptGoogleCredential(clientId: string): Promise<string> {
 /**
  * Sign in with Google.
  * Loads GIS, prompts the Google account picker, sends the credential
- * to POST /api/auth/googleauth, stores tokens, and updates user state.
+ * to POST /auth/googleauth, stores tokens, and updates user state.
  *
  * Usage:
  *   const result = await signInWithGoogle();
@@ -145,7 +145,7 @@ export async function signInWithGoogle(): Promise<AuthResponse | null> {
     const credential = await promptGoogleCredential(clientId);
 
     // 3. Send to YOUR backend — the only API call
-    const { data } = await apiClient.post<AuthResponse>("/api/auth/googleauth", {
+    const { data } = await apiClient.post<AuthResponse>("/auth/googleauth", {
       firebaseIdToken: credential, // backend expects this field name
     });
 

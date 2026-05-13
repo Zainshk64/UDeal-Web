@@ -11,7 +11,6 @@ import { ROUTES } from '@/src/utils/constants';
 import { isEmailIdentifier, isPhoneIdentifier } from '@/src/api/services/AuthApi';
 import { useAuth } from '@/src/context/AuthContext';
 import { toast } from 'sonner';
-import { signInWithGoogle } from '@/src/api/services/googleAuth';
 
 export default function LoginClient() {
   const router = useRouter();
@@ -68,7 +67,7 @@ export default function LoginClient() {
   // const router = useRouter();
  
   async function handleGoogleSignIn() {
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogleWeb();
     if (result) {
       router.push(ROUTES.HOME); // or wherever you redirect after login
     }
