@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { cn } from '@/src/utils/cn';
-
 interface SearchBarProps {
   placeholder?: string;
   className?: string;
   onSearch?: (query: string) => void;
+  onFocus?: () => void;
   variant?: 'default' | 'compact';
 }
 
@@ -15,6 +15,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Search products, categories...',
   className,
   onSearch,
+  onFocus,
   variant = 'default',
 }) => {
   const [query, setQuery] = useState('');
@@ -32,6 +33,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={onFocus}        // ← add this
+          onClick={onFocus}        // ← and this (covers tap on mobile)
           placeholder={placeholder}
           className={cn(
             'w-full pl-12 pr-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all',

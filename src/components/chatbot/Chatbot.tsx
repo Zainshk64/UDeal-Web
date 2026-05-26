@@ -4,7 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
 import { sendChatMessage, getInitialGreeting, ChatMessage } from '@/src/api/services/ChatbotApi';
-import { generateId } from '@/src/utils/format';
+
+// Generate unique conversation ID
+const generateConversationId = () => {
+  return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
 
 export const Chatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,29 +16,40 @@ export const Chatbot: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize chatbot on first open
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && !isInitialized) {
       initializeChat();
     }
   }, [isOpen]);
 
-  // Scroll to bottom
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Focus input when chat opens
+  useEffect(() => {
+    if (isOpen && !isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen, isLoading]);
+
   const initializeChat = async () => {
-    const newConversationId = generateId();
+    const newConversationId = generateConversationId();
+    console.log('Initializing chat with ID:', newConversationId);
+    
     setConversationId(newConversationId);
     setIsLoading(true);
 
     try {
       const response = await getInitialGreeting(newConversationId);
-      if (response) {
+      
+      if (response && response.reply) {
         setMessages([
           {
             role: 'assistant',
@@ -42,13 +57,87 @@ export const Chatbot: React.FC = () => {
             timestamp: Date.now(),
           },
         ]);
+      } else {
+        // Fallback message if API fails
+        setMessages([
+          {
+            role: 'assistant',
+            content: "I'm UDeal AI Assistant and I can only help with UDealZone-related questions. If you need UDealZone support, ask about the app/features, or email support@udealzone.com.",
+            timestamp: Date.now(),
+          },
+        ]);
       }
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error initializing chat:', error);
       setMessages([
         {
           role: 'assistant',
-          content: 'Hello! Welcome to UDealZone. How can I help you today?',
+          content: "I'm UDeal AI Assistant and I can only help with UDealZone-related questions. If you need UDealZone support, ask about the app/features, or email support@udealzone.com.",
+          timestamp: Date.now(),
+        },
+      ]);
+      setIsInitialized(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const trimmedMessage = inputValue.trim();
+    if (!trimmedMessage || !conversationId || isLoading) {
+      console.log('Cannot send message:', { trimmedMessage, conversationId, isLoading });
+      return;
+    }
+
+    console.log('Sending message:', trimmedMessage);
+    
+    // Clear input immediately
+    setInputValue('');
+
+    // Add user message to chat
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: trimmedMessage,
+      timestamp: Date.now(),
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await sendChatMessage(trimmedMessage, conversationId);
+      
+      if (response && response.reply) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: response.blocked 
+            ? (response.blockReason || 'I cannot respond to that message. Please ask something else.')
+            : response.reply,
+          timestamp: Date.now(),
+        };
+        
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        // Error fallback
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again or contact support@udealzone.com.',
+            timestamp: Date.now(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again later.',
           timestamp: Date.now(),
         },
       ]);
@@ -57,62 +146,12 @@ export const Chatbot: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
-    if (!inputValue.trim() || !conversationId) return;
-
-    const userMessage = inputValue.trim();
-    setInputValue('');
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'user',
-        content: userMessage,
-        timestamp: Date.now(),
-      },
-    ]);
-
-    setIsLoading(true);
-
-    try {
-      const response = await sendChatMessage(userMessage, conversationId);
-
-      if (response) {
-        if (response.blocked) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: 'I cannot respond to that message. Please ask something else.',
-              timestamp: Date.now(),
-            },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: response.reply,
-              timestamp: Date.now(),
-            },
-          ]);
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
-          timestamp: Date.now(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-      inputRef.current?.focus();
-    }
+  const handleOpen = () => {
+    setIsOpen(true);
   };
 
   return (
@@ -121,9 +160,10 @@ export const Chatbot: React.FC = () => {
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={isOpen ? handleClose : handleOpen}
         className="fixed bottom-23 right-8 p-4 gradient-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
         title="Chat with UDealZone Assistant"
+        aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
         {isOpen ? <FiX className="w-7 h-7" /> : <FiMessageCircle className="w-7 h-7" />}
       </motion.button>
@@ -145,8 +185,9 @@ export const Chatbot: React.FC = () => {
                 <p className="text-sm text-white/80">Always here to help</p>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={handleClose}
                 className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Close chat"
               >
                 <FiX className="w-5 h-5" />
               </button>
@@ -156,7 +197,7 @@ export const Chatbot: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((message, index) => (
                 <motion.div
-                  key={index}
+                  key={`${message.timestamp}-${index}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
@@ -171,7 +212,7 @@ export const Chatbot: React.FC = () => {
                         : 'bg-gray-100 text-black rounded-bl-none'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </motion.div>
               ))}
@@ -212,12 +253,13 @@ export const Chatbot: React.FC = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Type your message..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#F97316] transition-colors disabled:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#F97316] transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
                 disabled={isLoading || !inputValue.trim()}
-                className="p-2 bg-[#F97316] text-white rounded-lg hover:bg-[#d97706] disabled:bg-gray-300 transition-colors"
+                className="p-2 bg-[#F97316] text-white rounded-lg hover:bg-[#d97706] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                aria-label="Send message"
               >
                 <FiSend className="w-5 h-5" />
               </button>

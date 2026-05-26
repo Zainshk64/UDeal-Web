@@ -265,7 +265,7 @@ export default function ProductSearchPageClient() {
             years={yearsQuery.data || []}
           />
 
-          <section className="lg:col-span-9 xl:col-span-7">
+          <section className="lg:col-span-9 xl:col-span-9">
             <div className="mb-3 flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3">
               <div>
                 <h2 className="text-base font-bold text-gray-900">Search Results</h2>
@@ -317,17 +317,17 @@ export default function ProductSearchPageClient() {
             )}
           </section>
 
-          <aside className="hidden xl:block xl:col-span-2">
+          {/* <aside className="hidden xl:block xl:col-span-2">
             <GoogleAdSlot
               slot="sidebar"
               className="sticky top-28"
               format="rectangle"
               responsive={false}
             />
-          </aside>
+          </aside> */}
         </div>
-        <AppAdBanner ad={ads.bottom} className="mt-6" />
-        <GoogleAdSlot slot="listings" className="mt-4" />
+        {/* <AppAdBanner ad={ads.bottom} className="mt-6" />
+        <GoogleAdSlot slot="listings" className="mt-4" /> */}
       </div>
     </div>
   );

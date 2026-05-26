@@ -239,6 +239,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 variant="compact"
                 className="flex-1"
                 placeholder="Search products..."
+                    onFocus={() => router.push(ROUTES.SEARCH)}   // ← add this line
+
                 onSearch={(q) => {
                   const clean = q.trim();
                   if (!clean) return;
@@ -269,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1 sm:gap-2">
             {showSearch && (
               <button
-                onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+    onClick={() => router.push(ROUTES.SEARCH)}   // ← change this line only
                 className={cn(
                   "lg:hidden p-2.5 rounded-lg transition-colors",
                   variant === "glass"

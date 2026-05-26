@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
     {
       title: 'Browse',
       links: [
-        { label: 'Categories', href: '#' },
+        { label: 'Categories', href: '/category/1' },
         { label: 'Latest Ads', href: ROUTES.HOME },
         { label: 'Trending', href: '#' },
       ],
