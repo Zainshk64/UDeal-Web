@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiFacebook, FiTwitter, FiInstagram, FiLinkedin, FiMail } from 'react-icons/fi';
+import { FiFacebook, FiInstagram, FiYoutube } from 'react-icons/fi';
+import { SiTiktok, SiWhatsapp } from 'react-icons/si';
 import { ROUTES } from '@/src/utils/constants';
 
 export const Footer: React.FC = () => {
@@ -11,11 +12,11 @@ export const Footer: React.FC = () => {
 
   const footerLinks = [
     {
-      title: 'Browse',
+      title: 'Top Ads',
       links: [
-        { label: 'Categories', href: '/category/1' },
-        { label: 'Latest Ads', href: ROUTES.HOME },
-        { label: 'Trending', href: '#' },
+        { label: 'Featured Ads', href: '/#featured' },
+        { label: 'Premium Ads', href: '/#premium' },
+        { label: 'All Categories', href: '/category/1' },
       ],
     },
     {
@@ -23,39 +24,56 @@ export const Footer: React.FC = () => {
       links: [
         { label: 'Post Ad', href: ROUTES.ADD_POST },
         { label: 'Manage Ads', href: ROUTES.MY_ADS },
-        { label: 'Safety Tips', href: '#' },
+        { label: 'Safety Tips', href: '/activity/safety-tips' },
       ],
     },
     {
-      title: 'About Us',
+      title: 'Company',
       links: [
-        { label: 'About UDealZone', href: '#' },
-        { label: 'Blog', href: '#' },
-        { label: 'Contact Us', href: '#' },
+        { label: 'About Us', href: '/activity/about' },
+        { label: 'FAQ', href: '/activity/faq' },
       ],
     },
     {
       title: 'Legal',
       links: [
-        { label: 'Privacy Policy', href: '#' },
-        { label: 'Terms & Conditions', href: '#' },
-        { label: 'Cookie Policy', href: '#' },
+        { label: 'Privacy Policy', href: '/activity/privacy-policy' },
+        { label: 'Terms of Use', href: '/activity/terms-of-use' },
       ],
     },
   ];
 
   const socialLinks = [
-    { icon: FiFacebook, href: '#', label: 'Facebook' },
-    { icon: FiTwitter, href: '#', label: 'Twitter' },
-    { icon: FiInstagram, href: '#', label: 'Instagram' },
-    { icon: FiLinkedin, href: '#', label: 'LinkedIn' },
+    { 
+      icon: FiFacebook, 
+      href: 'https://www.facebook.com/share/19sk7go3fE/', 
+      label: 'Facebook' 
+    },
+    { 
+      icon: SiTiktok, 
+      href: 'https://www.tiktok.com/@udealzone?_t=ZN-8u8IOFZf446&_r=1', 
+      label: 'TikTok' 
+    },
+    { 
+      icon: FiInstagram, 
+      href: 'https://www.instagram.com/udealzoneofficial?igsh=MWVtMTV2djgwNXd1ag==', 
+      label: 'Instagram' 
+    },
+    { 
+      icon: FiYoutube, 
+      href: 'https://youtube.com/@udealzone?si=DSFVEl5Ees_oq8xK', 
+      label: 'YouTube' 
+    },
+    { 
+      icon: SiWhatsapp, 
+      href: 'https://whatsapp.com/channel/0029Vb6EeH76LwHiQEPrMd2Y', 
+      label: 'WhatsApp' 
+    },
   ];
 
   return (
     <footer className="gradient-premium text-white">
-      {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-22">
-        {/* Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <motion.div
@@ -79,6 +97,8 @@ export const Footer: React.FC = () => {
                   <motion.a
                     key={index}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2 bg-white/10 rounded-full hover:bg-[#F97316] transition-colors"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -124,19 +144,6 @@ export const Footer: React.FC = () => {
           <p className="text-white/70 text-sm">
             © {currentYear} UDealZone. All rights reserved.
           </p>
-
-          {/* Newsletter */}
-          {/* <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2">
-            <FiMail className="w-4 h-4" />
-            <input
-              type="email"
-              placeholder="Get updates via email"
-              className="bg-transparent text-sm text-white placeholder-white/50 outline-none w-40"
-            />
-            <button className="text-[#F97316] hover:text-white transition-colors font-medium text-sm">
-              Subscribe
-            </button>
-          </div> */}
         </div>
       </div>
     </footer>

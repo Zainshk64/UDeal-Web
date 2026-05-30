@@ -66,7 +66,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         transition={{ duration: 0.2 }}
       >
         {/* Image Section */}
-        <div className="relative w-full h-48 bg-gray-200 overflow-hidden">
+        <div 
+        id='#featured' 
+        className="relative w-full h-48 bg-gray-200 overflow-hidden">
           {/* Product Type Badge */}
           {(product.ProductType === "Featured" || product.MarkAsSold) && (
             <div className="absolute top-3 left-3 z-10">

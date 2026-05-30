@@ -194,7 +194,7 @@ export default function ProductDetailPageClient() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-2 text-gray-600 hover:text-[#003049] transition-colors group"
+              className="flex items-center gap-2 cursor-pointer text-white py-1 px-3 rounded-xl bg-primary transition-colors group"
             >
               <FiArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span className="font-medium">Back</span>

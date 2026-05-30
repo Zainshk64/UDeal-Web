@@ -29,6 +29,7 @@ import { getRecentSearches, pushRecentSearch, removeRecentSearch } from '@/src/c
 import AppAdBanner from '@/src/components/ads/AppAdBanner';
 import GoogleAdSlot from '@/src/components/ads/GoogleAdSlot';
 import { usePageAds } from '@/src/hooks/usePageAds';
+import { SearchHeroBanner } from '@/components/search/SearchHeroBanner';
 
 const RECENT_KEY = 'udz_recent_product_searches';
 const PAGE_SIZE = 30;
@@ -135,7 +136,8 @@ export default function ProductSearchPageClient() {
   return (
     <div className="min-h-screen bg-gray-50 pt-24">
       <div className="mx-auto w-full max-w-7xl px-3 pb-8 sm:px-4">
-        <AppAdBanner ad={ads.top} className="mb-4" />
+                <SearchHeroBanner searchQuery={selectedQuery} />
+
         <div className="rounded-2xl border border-white/50 bg-white/80 p-3 shadow-sm backdrop-blur md:p-4">
           <div className="relative">
             <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -243,6 +245,9 @@ export default function ProductSearchPageClient() {
           </div>
         )}
 
+        <AppAdBanner ad={ads.top} className="my-4" />
+
+
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
           <ProductSearchFilters
             open={mobileFiltersOpen}
@@ -332,4 +337,3 @@ export default function ProductSearchPageClient() {
     </div>
   );
 }
-

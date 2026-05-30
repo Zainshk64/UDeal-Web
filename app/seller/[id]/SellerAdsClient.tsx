@@ -56,13 +56,13 @@ export default function SellerAdsClient() {
     <>
       <main className="py-28 min-h-screen bg-gray-50">
         <Container className="py-4">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#003049] transition-colors group"
-          >
-            <FiArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Back</span>
-          </button>
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 cursor-pointer text-white py-1 px-3 rounded-xl bg-primary transition-colors group"
+            >
+              <FiArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Back</span>
+            </button>
         </Container>
 
         <Container>
