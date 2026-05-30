@@ -15,8 +15,8 @@ export const Footer: React.FC = () => {
       title: 'Top Ads',
       links: [
         { label: 'Featured Ads', href: '/#featured' },
-        { label: 'Premium Ads', href: '/#premium' },
         { label: 'All Categories', href: '/category/1' },
+        { label: 'Buyers', href: ROUTES.BUYERS },
       ],
     },
     {

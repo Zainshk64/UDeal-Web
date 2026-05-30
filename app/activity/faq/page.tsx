@@ -11,7 +11,7 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "What is UdealZone?",
+    question: "What is UDealZone?",
     answer:
       "UdealZone is an online platform that provides users with seamless buying and selling experiences. It offers a variety of tools and features to enhance the selling process, such as featured ads and category-specific boosts.",
   },

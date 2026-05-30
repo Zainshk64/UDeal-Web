@@ -110,7 +110,7 @@ export default function SafetyTipsPage() {
             Our support team is here to help keep our community safe
           </p>
           <a
-            href="mailto:info@udealzone.com"
+            href="mailto:support@udealzone.com"
             className="inline-block bg-[#F97316] hover:bg-[#d97706] text-white font-semibold px-8 py-3 rounded-lg transition-colors"
           >
             Contact Support
