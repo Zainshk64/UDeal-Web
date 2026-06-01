@@ -110,6 +110,7 @@ export const CATEGORIES = [
 
 export const ROUTES = {
   HOME: "/",
+  ACCOUNT_DELETION_REQUEST: "/account-deletion-request",
   LOGIN: "/auth/login",
   SIGNUP: "/auth/signup",
   FORGOT_PASSWORD: "/auth/forgot-password",

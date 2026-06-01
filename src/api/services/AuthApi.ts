@@ -63,6 +63,12 @@ export interface ChangePasswordResponse {
   accessKey?: string | null;
 }
 
+export interface RequestResponse {
+  returnCode: boolean;
+  returnText?: string;
+  accessKey?: string;
+}
+
 export interface City {
   cityId: number;
   cityName: string;
@@ -638,6 +644,49 @@ export const changePassword = async (
       "Network error. Please try again.";
     toast.error("Error", { description: msg });
     console.error("Change password error:", error);
+    return { success: false, message: msg };
+  }
+};
+
+// ============================================
+// DELETE ACCOUNT
+// ============================================
+
+export const deleteAccount = async (
+  email: string,
+  password: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete<RequestResponse>(
+      "/auth/delete-account",
+      {
+        params: {
+          Email: email.trim(),
+          Password: password,
+        },
+      },
+    );
+
+    if (response.data.returnCode) {
+      toast.success("Account deleted successfully.");
+      return {
+        success: true,
+        message: response.data.returnText || "Your account has been deleted.",
+      };
+    }
+
+    toast.error("Account deletion failed", {
+      description:
+        response.data.returnText || "Please verify your credentials and try again.",
+    });
+    return {
+      success: false,
+      message: response.data.returnText || "Failed to delete account",
+    };
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.returnText || error.message || "Network error";
+    toast.error("Account deletion failed", { description: msg });
     return { success: false, message: msg };
   }
 };

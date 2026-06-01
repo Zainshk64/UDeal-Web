@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FiCamera, FiCheckCircle, FiMail, FiMapPin, FiPhone, FiSave, FiUser } from 'react-icons/fi';
+import { FiCamera, FiCheckCircle, FiMail, FiMapPin, FiPhone, FiSave, FiTrash2, FiUser } from 'react-icons/fi';
 import PakistanPhoneInput from '@/src/components/auth/PakistanPhoneInput';
 import OtpCodeInput from '@/src/components/auth/OtpCodeInput';
 import { useAuth } from '@/src/context/AuthContext';
@@ -411,6 +412,20 @@ export default function ProfilePageClient() {
                 <FiSave />
                 {isSaving ? 'Saving...' : 'Save Profile'}
               </button>
+
+              <div className="border-t border-gray-200 pt-5">
+                <p className="text-sm font-semibold text-red-700">Account Deletion</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  Permanently delete your account and all associated data.
+                </p>
+                <Link
+                  href={ROUTES.ACCOUNT_DELETION_REQUEST}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-red-300 py-2.5 font-semibold text-red-700 transition hover:bg-red-50"
+                >
+                  <FiTrash2 />
+                  Delete Account
+                </Link>
+              </div>
             </div>
           </div>
         </motion.div>
