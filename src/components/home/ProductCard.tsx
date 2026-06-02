@@ -13,6 +13,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/src/utils/constants";
 import { cn } from "@/src/utils/cn";
+import { buildProductSlugPath } from "@/src/utils/slug";
 
 interface ProductCardProps {
   product: HomeAd;
@@ -59,7 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const imageUrl = getImageUrl(product.PicPath);
 
   return (
-<Link href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}?isgeneral=true`}>
+<Link href={`${buildProductSlugPath(product.ProdcutTitle, product.ProductId)}?isgeneral=true`}>
       <motion.div
         className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 h-full flex flex-col cursor-pointer group"
         whileHover={{ translateY: -4 }}

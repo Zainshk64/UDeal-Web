@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { FiFacebook, FiInstagram, FiYoutube } from 'react-icons/fi';
 import { SiTiktok, SiWhatsapp } from 'react-icons/si';
 import { ROUTES } from '@/src/utils/constants';
+import { buildCategorySlugPath } from '@/src/utils/slug';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -15,7 +16,7 @@ export const Footer: React.FC = () => {
       title: 'Top Ads',
       links: [
         { label: 'Featured Ads', href: '/#featured' },
-        { label: 'All Categories', href: '/category/1' },
+        { label: 'All Categories', href: buildCategorySlugPath('Vehicles') },
         { label: 'Buyers', href: ROUTES.BUYERS },
       ],
     },

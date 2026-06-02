@@ -11,6 +11,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { createConversation } from "@/src/api/services/chatSystemApi";
 import { ROUTES } from "@/src/utils/constants";
 import { toast } from "sonner";
+import { buildProductSlugPath } from "@/src/utils/slug";
 
 interface SellerCardProps {
   metaData: ProductMetaData;
@@ -68,13 +69,13 @@ export const SellerCard: React.FC<SellerCardProps> = ({
     }
     const params = new URLSearchParams({
       c: conversationId,
-      back: pathname || `${ROUTES.PRODUCT_DETAIL}/${detail.ProductId}`,
+      back: pathname || buildProductSlugPath(detail.ProdcutTitle, detail.ProductId),
       type: "product",
       peerName: metaData.Name || "Seller",
       peerImage: metaData.PicPath || "",
       productTitle: detail.ProdcutTitle || "Listing",
       productImage: "",
-      viewUrl: `${ROUTES.PRODUCT_DETAIL}/${detail.ProductId}`,
+      viewUrl: buildProductSlugPath(detail.ProdcutTitle, detail.ProductId),
     });
     router.push(`${ROUTES.CHAT}?${params.toString()}`);
   };

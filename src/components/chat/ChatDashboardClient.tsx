@@ -26,6 +26,7 @@ import { useChatStore, type ChatFilter } from '@/src/stores/chatStore';
 import type { ChatMessage, Conversation } from '@/src/api/services/chatSystemApi';
 import { getChatImageUrl } from '@/src/api/services/chatSystemApi';
 import { ROUTES } from '@/src/utils/constants';
+import { buildProductSlugPath } from '@/src/utils/slug';
 import { toast } from 'sonner';
 import { cn } from '@/src/utils/cn';
 import { formatDateTimePK, formatTimePK } from '@/src/utils/datePk';
@@ -288,7 +289,7 @@ export default function ChatDashboardClient() {
   const viewItemHref = active
     ? active.type === 1 || active.label?.toLowerCase() === 'buyer'
       ? `${ROUTES.BUYERS}/${active.productId}`
-      : `${ROUTES.PRODUCT_DETAIL}/${active.productId}`
+      : buildProductSlugPath(active.productTitle || 'listing', active.productId)
     : ROUTES.HOME;
 
   return (

@@ -15,6 +15,7 @@ import {
 import { MyAdItem } from '@/src/api/services/MyAdsApi';
 import { getImageUrl } from '@/src/utils/image';
 import { cn } from '@/src/utils/cn';
+import { buildProductSlugPath } from '@/src/utils/slug';
 
 interface MyAdCardProps {
   ad: MyAdItem;
@@ -128,7 +129,7 @@ export const MyAdCard: React.FC<MyAdCardProps> = ({
 
         {/* Details */}
         <Link
-          href={`/product/${ad.productId}?isgeneral=false`}
+          href={`${buildProductSlugPath(ad.prodcutTitle, ad.productId)}?isgeneral=false`}
           className="flex-1 p-4 min-w-0 hover:bg-gray-50/50 transition-colors"
         >
           <h3 className="text-sm font-bold text-[#003049] truncate">

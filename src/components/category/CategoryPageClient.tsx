@@ -36,6 +36,7 @@ import {
   categoryIdToAdPageKey,
   type AdPageKey,
 } from "@/src/api/services/AppAdsApi";
+import { buildCategorySlugPath, buildProductSlugPath, toSlug } from "@/src/utils/slug";
 
 const PAGE_SIZE = 30;
 
@@ -62,7 +63,17 @@ export default function CategoryPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, user } = useAuth();
-  const catId = params?.id ? Number(params.id) : 0;
+  const categoryParam = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const catId = useMemo(() => {
+    if (!categoryParam) return 0;
+    const parsed = Number(categoryParam);
+    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+
+    const matchedCategory = CATEGORIES.find(
+      (c) => toSlug(c.name) === categoryParam,
+    );
+    return matchedCategory?.id || 0;
+  }, [categoryParam]);
   const currentCategory = CATEGORIES.find((c) => c.id === catId);
   const pageKey: AdPageKey =
     categoryIdToAdPageKey(catId) ?? "All Listings Page";
@@ -250,7 +261,7 @@ export default function CategoryPageClient() {
             <button
               key={cat.id}
               onClick={() =>
-                router.push(`${ROUTES.CATEGORY}/${cat.id}${cityQuery}`)
+                router.push(`${buildCategorySlugPath(cat.name)}${cityQuery}`)
               }
               className={cn(
                 "whitespace-nowrap cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition",
@@ -304,7 +315,7 @@ export default function CategoryPageClient() {
                         key={`side-${cat.id}`}
                         onClick={() =>
                           router.push(
-                            `${ROUTES.CATEGORY}/${cat.id}${cityQuery}`,
+                            `${buildCategorySlugPath(cat.name)}${cityQuery}`,
                           )
                         }
                         className={cn(
@@ -496,7 +507,12 @@ export default function CategoryPageClient() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.02 }}
                         >
-                          <Link href={`/product/${product.ProductId}`}>
+                          <Link
+                            href={buildProductSlugPath(
+                              product.ProdcutTitle,
+                              product.ProductId,
+                            )}
+                          >
                             <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
                               <div className="relative h-48 w-full bg-gray-200">
                                 <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">

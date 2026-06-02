@@ -12,6 +12,7 @@ import { Container } from '@/src/components/ui/Container';
 import { Pagination } from '@/src/components/seller/Pagination';
 import { useAuth } from '@/src/context/AuthContext';
 import { ROUTES } from '@/src/utils/constants';
+import { buildProductSlugPath } from '@/src/utils/slug';
 import {
   type FavoriteProduct,
   getFavoriteProducts,
@@ -367,7 +368,7 @@ export default function FavoritesClient() {
                     className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
                   >
                     <Link
-                      href={`${ROUTES.PRODUCT_DETAIL}/${product.ProductId}`}
+                      href={buildProductSlugPath(product.ProdcutTitle, product.ProductId)}
                       className="block"
                     >
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">

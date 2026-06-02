@@ -6,6 +6,7 @@ import React from 'react';
 import { FiClock, FiMapPin, FiStar } from 'react-icons/fi';
 import { formatCurrency } from '@/src/utils/format';
 import { getImageUrl } from '@/src/utils/image';
+import { buildProductSlugPath } from '@/src/utils/slug';
 
 type BaseProduct = {
   ProductId: number;
@@ -24,7 +25,7 @@ export function SearchProductCard({ product }: { product: BaseProduct }) {
   const isFeatured = product.ProductType === 'Featured' || product.IsFeatured;
   const pic = product.PicPath ?? product.MainPicPath ?? null;
   return (
-    <Link href={`/product/${product.ProductId}`}>
+    <Link href={buildProductSlugPath(product.ProdcutTitle, product.ProductId)}>
       <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
         <div className="relative h-48 w-full bg-gray-100">
           {isFeatured && (

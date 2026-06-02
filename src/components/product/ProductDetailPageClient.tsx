@@ -30,13 +30,24 @@ import { useProductSession } from "@/hooks/useProductSession";
 import { cn } from "@/src/utils/cn";
 import { ImageViewer } from "@/src/components/product/ImagePreview";
 import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
+import { buildProductSlugPath, toSlug } from "@/src/utils/slug";
+import { getSuggestions } from "@/src/api/services/HomeSearchBarApi";
 
 export default function ProductDetailPageClient() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  const productId = params?.id ? Number(params.id) : undefined;
   const searchParams = useSearchParams();
+  const productParam = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const pidFromQuery = searchParams.get("pid");
+  const parsedPidFromQuery = pidFromQuery ? Number(pidFromQuery) : NaN;
+  const parsedProductParam = Number(productParam);
+  const directProductId = !Number.isNaN(parsedPidFromQuery) && parsedPidFromQuery > 0
+    ? parsedPidFromQuery
+    : (!Number.isNaN(parsedProductParam) && parsedProductParam > 0 ? parsedProductParam : undefined);
+  const [resolvedProductId, setResolvedProductId] = useState<number | undefined>(undefined);
+  const [slugLookupDone, setSlugLookupDone] = useState(false);
+  const productId = directProductId ?? resolvedProductId;
   const isGeneral =
     searchParams.get("isgeneral") !== "false" &&
     searchParams.get("isGeneral") !== "false";
@@ -56,7 +67,47 @@ export default function ProductDetailPageClient() {
   const { loadingFavId, handleFavoriteToggle } = useFavorite();
 
   useEffect(() => {
-    if (!productId) return;
+    if (directProductId || !productParam) {
+      setSlugLookupDone(true);
+      return;
+    }
+
+    let active = true;
+    setSlugLookupDone(false);
+
+    const resolveProductIdFromSlug = async () => {
+      try {
+        const query = productParam.replace(/-/g, " ").trim();
+        const suggestions = await getSuggestions(query, 1, 100);
+        const exactMatch = suggestions.find(
+          (item) => toSlug(item.productTitle) === productParam,
+        );
+        const match = exactMatch || suggestions[0];
+
+        if (active) {
+          setResolvedProductId(match?.productId);
+        }
+      } finally {
+        if (active) {
+          setSlugLookupDone(true);
+        }
+      }
+    };
+
+    resolveProductIdFromSlug();
+
+    return () => {
+      active = false;
+    };
+  }, [directProductId, productParam]);
+
+  useEffect(() => {
+    if (!productId) {
+      if (slugLookupDone) {
+        setLoading(false);
+      }
+      return;
+    }
 
     const fetchProduct = async () => {
       setLoading(true);
@@ -75,13 +126,13 @@ export default function ProductDetailPageClient() {
     };
 
     fetchProduct();
-  }, [productId, user?.userId, isGeneral]);
+  }, [productId, user?.userId, isGeneral, slugLookupDone]);
   // Handlers
   const handleShare = async () => {
     const detail = data?.Details?.[0];
     if (!detail) return;
 
-    const shareUrl = `${window.location.origin}/product/${detail.ProductId}`;
+    const shareUrl = `${window.location.origin}${buildProductSlugPath(detail.ProdcutTitle, detail.ProductId)}`;
     const shareText = `Check out ${detail.ProdcutTitle} for PKR ${detail.Price?.toLocaleString()} on UDealZone!\n\n${shareUrl}`;
 
     try {

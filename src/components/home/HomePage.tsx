@@ -21,6 +21,7 @@ import { toggleFavorite } from "@/src/api/services/HomeApi";
 import AppAdBanner from "@/src/components/ads/AppAdBanner";
 import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
 import { usePageAds } from "@/src/hooks/usePageAds";
+import { buildCategorySlugPath } from "@/src/utils/slug";
 
 export const HomePage: React.FC = () => {
   const { ads } = usePageAds("Home Page");
@@ -277,7 +278,7 @@ export const HomePage: React.FC = () => {
                   {category?.name}
                 </h2>
                 <Link
-                  href={`/category/${category?.id || ""}`}
+                  href={category ? buildCategorySlugPath(category.name) : "/category"}
                   className="text-[#F97316] font-semibold hover:text-[#d97706] transition-colors flex items-center gap-2 group"
                 >
                   View All

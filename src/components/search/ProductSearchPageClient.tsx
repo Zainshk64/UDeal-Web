@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiSearch, FiSliders, FiX } from 'react-icons/fi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CATEGORIES, ROUTES } from '@/src/utils/constants';
+import { buildCategorySlugPath } from '@/src/utils/slug';
 import {
   DEFAULT_FILTERS,
   getBrands,
@@ -224,7 +225,7 @@ export default function ProductSearchPageClient() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => router.push(`${ROUTES.CATEGORY}/${cat.id}`)}
+                onClick={() => router.push(buildCategorySlugPath(cat.name))}
                 className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:border-[#F97316] hover:text-[#F97316]"
               >
                 <span className="mr-1">{cat.icon ?? '•'}</span>

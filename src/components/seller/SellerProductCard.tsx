@@ -11,6 +11,7 @@ import { getImageUrl } from '@/src/utils/image';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/utils/cn';
 import { useFavorite } from '@/hooks/useFavorite';
+import { buildProductSlugPath } from '@/src/utils/slug';
 
 interface SellerProductCardProps {
   product: SellerProduct;
@@ -59,7 +60,7 @@ export const SellerProductCard: React.FC<SellerProductCardProps> = ({
   };
 
   return (
-    <Link href={`/product/${product.productId}`}>
+    <Link href={buildProductSlugPath(product.prodcutTitle, product.productId)}>
       <motion.div
         className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group cursor-pointer h-full flex flex-col"
         whileHover={{ translateY: -4 }}

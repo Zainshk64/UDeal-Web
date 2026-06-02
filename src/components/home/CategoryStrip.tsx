@@ -6,6 +6,7 @@ import { CategoryChip } from "./CategoryChip";
 import { CATEGORIES } from "@/src/utils/constants";
 import { Container } from "../ui/Container";
 import { useRouter } from "next/navigation";
+import { buildCategorySlugPath } from "@/src/utils/slug";
 
 export const CategoryStrip: React.FC = () => {
   const router = useRouter();
@@ -33,7 +34,7 @@ export const CategoryStrip: React.FC = () => {
                   icon={category.icon}
                   image={category.image}
                   onClick={() => {
-                    router.push(`/category/${category.id}`);
+                    router.push(buildCategorySlugPath(category.name));
                   }}
                 />
               </motion.div>

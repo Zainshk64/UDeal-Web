@@ -26,6 +26,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useChatStore } from "@/src/stores/chatStore";
 import { logout } from "@/src/api/services/AuthApi";
 import { ROUTES, CATEGORIES } from "@/src/utils/constants";
+import { buildCategorySlugPath } from "@/src/utils/slug";
 import { ProfileMenu } from "./ProfileMenu";
 import { NotificationPopup } from "./NotificationPopup";
 import { SearchBar } from "../ui/SearchBar";
@@ -213,7 +214,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           key={cat.id}
                           onClick={() => {
                             setIsCategoryOpen(false);
-                            router.push(`${ROUTES.CATEGORY}/${cat.id}`);
+                            router.push(buildCategorySlugPath(cat.name));
                           }}
                           className="flex items-center cursor-pointer gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
                         >
@@ -655,9 +656,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                     key={`mobile-cat-${cat.id}`}
                                     type="button"
                                     onClick={() => {
-                                      router.push(
-                                        `${ROUTES.CATEGORY}/${cat.id}`,
-                                      );
+                                      router.push(buildCategorySlugPath(cat.name));
                                       setIsMenuOpen(false);
                                     }}
                                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-white"
