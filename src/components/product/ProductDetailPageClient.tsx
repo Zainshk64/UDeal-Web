@@ -30,8 +30,7 @@ import { useProductSession } from "@/hooks/useProductSession";
 import { cn } from "@/src/utils/cn";
 import { ImageViewer } from "@/src/components/product/ImagePreview";
 import GoogleAdSlot from "@/src/components/ads/GoogleAdSlot";
-import { buildProductSlugPath, toSlug } from "@/src/utils/slug";
-import { getSuggestions } from "@/src/api/services/HomeSearchBarApi";
+import { buildProductSlugPath, getProductIdFromSlug } from "@/src/utils/slug";
 
 export default function ProductDetailPageClient() {
   const params = useParams();
@@ -39,15 +38,12 @@ export default function ProductDetailPageClient() {
   const { isAuthenticated, user } = useAuth();
   const searchParams = useSearchParams();
   const productParam = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  // Support legacy ?pid= query, then slug-embedded ID (title-12345), then bare numeric id
   const pidFromQuery = searchParams.get("pid");
   const parsedPidFromQuery = pidFromQuery ? Number(pidFromQuery) : NaN;
-  const parsedProductParam = Number(productParam);
-  const directProductId = !Number.isNaN(parsedPidFromQuery) && parsedPidFromQuery > 0
+  const productId = (!Number.isNaN(parsedPidFromQuery) && parsedPidFromQuery > 0)
     ? parsedPidFromQuery
-    : (!Number.isNaN(parsedProductParam) && parsedProductParam > 0 ? parsedProductParam : undefined);
-  const [resolvedProductId, setResolvedProductId] = useState<number | undefined>(undefined);
-  const [slugLookupDone, setSlugLookupDone] = useState(false);
-  const productId = directProductId ?? resolvedProductId;
+    : getProductIdFromSlug(productParam);
   const isGeneral =
     searchParams.get("isgeneral") !== "false" &&
     searchParams.get("isGeneral") !== "false";
@@ -67,45 +63,8 @@ export default function ProductDetailPageClient() {
   const { loadingFavId, handleFavoriteToggle } = useFavorite();
 
   useEffect(() => {
-    if (directProductId || !productParam) {
-      setSlugLookupDone(true);
-      return;
-    }
-
-    let active = true;
-    setSlugLookupDone(false);
-
-    const resolveProductIdFromSlug = async () => {
-      try {
-        const query = productParam.replace(/-/g, " ").trim();
-        const suggestions = await getSuggestions(query, 1, 100);
-        const exactMatch = suggestions.find(
-          (item) => toSlug(item.productTitle) === productParam,
-        );
-        const match = exactMatch || suggestions[0];
-
-        if (active) {
-          setResolvedProductId(match?.productId);
-        }
-      } finally {
-        if (active) {
-          setSlugLookupDone(true);
-        }
-      }
-    };
-
-    resolveProductIdFromSlug();
-
-    return () => {
-      active = false;
-    };
-  }, [directProductId, productParam]);
-
-  useEffect(() => {
     if (!productId) {
-      if (slugLookupDone) {
-        setLoading(false);
-      }
+      setLoading(false);
       return;
     }
 
@@ -126,7 +85,7 @@ export default function ProductDetailPageClient() {
     };
 
     fetchProduct();
-  }, [productId, user?.userId, isGeneral, slugLookupDone]);
+  }, [productId, user?.userId, isGeneral]);
   // Handlers
   const handleShare = async () => {
     const detail = data?.Details?.[0];
